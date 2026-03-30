@@ -605,6 +605,142 @@
         #profile-edit {
             display: none;
         }
+
+        /* 响应式设计 - 移动端适配 */
+        @media (max-width: 768px) {
+            /* 留言按钮 */
+            .message-nav-btn {
+                top: 20px;
+                left: 20px;
+                font-size: 16px;
+                padding: 8px;
+            }
+
+            /* 封面文字 */
+            .cover-text {
+                font-size: 25vw;
+                letter-spacing: 8px;
+            }
+
+            /* 内容区域 */
+            .content-area {
+                padding: 60px 0;
+            }
+
+            /* 内容包装器 */
+            .content-wrapper {
+                flex-direction: column;
+                padding: 0 20px;
+            }
+
+            /* 侧边栏 */
+            .sidebar {
+                position: static;
+                right: auto;
+                top: auto;
+                transform: none;
+                width: 100%;
+                max-width: 100%;
+                margin-top: 40px;
+                gap: 20px;
+            }
+
+            /* 卡片样式 */
+            .profile-card, .extra-card {
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+
+            /* 头像 */
+            .profile-avatar {
+                width: 100px;
+                height: 100px;
+            }
+
+            /* 留言表单 */
+            .message-form {
+                margin-bottom: 40px;
+                padding: 20px;
+            }
+
+            /* 留言表单文本域 */
+            .message-form textarea {
+                height: 100px;
+                font-size: 16px;
+                padding: 16px;
+            }
+
+            /* 留言项 */
+            .message-item {
+                padding: 20px 24px;
+                border-radius: 16px;
+            }
+
+            /* 留言内容 */
+            .message-content {
+                font-size: 16px;
+                line-height: 1.6;
+            }
+
+            /* 模态框 */
+            .message-modal-card {
+                width: 90%;
+                max-width: 400px;
+                padding: 30px 20px;
+                border-radius: 20px;
+            }
+
+            /* 模态框文本域 */
+            .message-modal-card textarea {
+                height: 150px;
+                font-size: 16px;
+                padding: 16px;
+            }
+
+            /* 密码模态框 */
+            .password-modal .modal-card {
+                width: 90%;
+                max-width: 300px;
+                padding: 30px 20px;
+            }
+
+            /* 统计项 */
+            .profile-stats {
+                padding-top: 10px;
+            }
+
+            /* 公告栏 */
+            .extra-card h3 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+            /* 公告栏内容 */
+            .extra-card p {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+        }
+
+        /* 响应式设计 - 平板适配 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            /* 内容包装器 */
+            .content-wrapper {
+                padding-right: 350px;
+                padding-left: 60px;
+            }
+
+            /* 侧边栏 */
+            .sidebar {
+                right: 60px;
+                width: 280px;
+            }
+
+            /* 卡片样式 */
+            .profile-card, .extra-card {
+                padding: 40px 30px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -891,15 +1027,24 @@
             const messageBtn = document.querySelector('.message-nav-btn');
             const sidebar = document.querySelector('.sidebar');
             
+            // 检测是否为移动设备
+            const isMobile = window.innerWidth <= 768;
+            
             // 当封面区域完全离开视口时显示
             if (coverRect.bottom <= 0) {
                 messageBtn.classList.add('visible');
-                sidebar.classList.add('visible');
+                // 在移动设备上，侧边栏是静态的，不需要隐藏
+                if (!isMobile) {
+                    sidebar.classList.add('visible');
+                }
             }
             // 当封面区域开始进入视口时隐藏
             else if (coverRect.top <= window.innerHeight && coverRect.bottom >= 0) {
                 messageBtn.classList.remove('visible');
-                sidebar.classList.remove('visible');
+                // 在移动设备上，侧边栏是静态的，不需要隐藏
+                if (!isMobile) {
+                    sidebar.classList.remove('visible');
+                }
             }
         }
     </script>
