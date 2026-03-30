@@ -1,10 +1,15 @@
 import os
+import time
+import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 CORS(app)
+
+# 设置时区
+timezone = datetime.timezone(datetime.timedelta(hours=8), 'CST')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///messages.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -15,7 +20,7 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     likes = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=lambda: datetime.datetime.now(timezone))
 
 class Profile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +36,7 @@ def get_messages():
         'content': m.content,
         'likes': m.likes,
         'display_likes': '99+' if m.likes > 99 else str(m.likes),
-        'created_at': m.created_at.strftime('%Y-%m-%d %H:%M')
+        'created_at': m.created_at.astimezone(timezone).strftime('%Y-%m-%d %H:%M')
     } for m in messages])
 
 @app.route('/api/messages', methods=['POST'])
@@ -51,7 +56,7 @@ def create_message():
         'content': message.content,
         'likes': message.likes,
         'display_likes': '99+' if message.likes > 99 else str(message.likes),
-        'created_at': message.created_at.strftime('%Y-%m-%d %H:%M')
+        'created_at': message.created_at.astimezone(timezone).strftime('%Y-%m-%d %H:%M')
     }), 201
 
 @app.route('/api/messages/<int:message_id>/like', methods=['POST'])
