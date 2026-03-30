@@ -11,7 +11,7 @@ CORS(app)
 # 设置时区
 timezone = datetime.timezone(datetime.timedelta(hours=8), 'CST')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///messages.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///messages.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
