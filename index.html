@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}bianra的小屋{% endblock %}
+
+{% block content %}
+<div class="cover-image-wrapper">
+    <!-- 使用全屏背景图 -->
+    <img src="{% static 'images/splash_bg.jpg' %}" 
+         onerror="this.src='https://picsum.photos/1920/1080?nature'" 
+         alt="Cover Image" 
+         class="cover-image">
+    <!-- 封面文字 "bianra" -->
+    <div class="cover-text">bianra</div>
+    <!-- 渐变模糊过渡层 -->
+    <div class="blur-overlay"></div>
+</div>
+
+<div class="content-area">
+    <div class="content-wrapper">
+        <!-- 左侧：留言展示区域 -->
+        <div class="message-board">
+            <!-- 留言列表 -->
+            <div class="message-list">
+                {% for message in messages %}
+                    <div class="message-item">
+                    <div class="message-header">
+                        <span class="message-time">{{ message.created_at|date:"Y-m-d H:i" }}</span>
+                        <a href="{% url 'delete_message' message.pk %}" class="delete-btn" onclick="return confirm('确定要删除这条留言吗？')">删除</a>
+                    </div>
+                    <div class="message-content">{{ message.content }}</div>
+                    <div class="message-footer">
+                        <a href="{% url 'like_message' message.pk %}" class="like-btn">
+                            <span class="like-icon">❤</span>
+                            <span class="like-count">{{ message.display_likes }}</span>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                    <p style="text-align: center; color: #999; margin-top: 40px;">暂无留言，快来抢沙发吧！</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 右侧：个人信息小框 -->
+        <aside class="sidebar">
+            <div class="profile-card" id="profile-card">
+                <img src="https://picsum.photos/200/200" alt="Profile" class="profile-avatar" onclick="handleAvatarClick()">
+                
+                <!-- 展示模式 -->
+                <div id="profile-view">
+                    <h2 class="profile-name">{{ profile.name }}</h2>
+                    <p class="profile-bio">{{ profile.bio }}</p>
+                </div>
+
+                <!-- 编辑模式 -->
+                <div id="profile-edit" style="display: none;">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="password" id="edit-password">
+                        <label class="edit-label">名字</label>
+                        <input type="text" name="name" value="{{ profile.name }}" class="edit-input" required>
+                        <label class="edit-label">简介</label>
+                        <textarea name="bio" class="edit-textarea" required>{{ profile.bio }}</textarea>
+                        <label class="edit-label">公告栏</label>
+                        <textarea name="announcement" class="edit-textarea" required>{{ profile.announcement }}</textarea>
+                        <div class="edit-actions">
+                            <button type="button" onclick="cancelEdit()" class="cancel-btn">取消</button>
+                            <button type="submit" class="save-btn">保存</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ messages|length }}</span>
+                        <span class="stat-label">留言</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下方新增的小框 -->
+            <div class="extra-card">
+                <h3 style="margin-bottom: 15px; color: #333; font-size: 18px;">公告栏</h3>
+                <p style="color: #888; font-size: 14px; line-height: 1.6; white-space: pre-line;">
+                    {{ profile.announcement }}
+                </p>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
