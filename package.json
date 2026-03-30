@@ -1,0 +1,13 @@
+{
+  "name": "bianra-homepage",
+  "version": "1.0.0",
+  "description": "Personal homepage with message board",
+  "main": "app.py",
+  "scripts": {
+    "start": "gunicorn app:app",
+    "dev": "python app.py"
+  },
+  "keywords": ["flask", "homepage", "message-board"],
+  "author": "bianra",
+  "license": "MIT"
+}

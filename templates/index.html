@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bianra的小屋</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+        }
+
+        .message-nav-btn {
+            position: fixed;
+            top: 35px;
+            left: 40px;
+            font-size: 20px;
+            color: #333;
+            cursor: pointer;
+            z-index: 2001;
+            padding: 10px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        visibility 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                        color 0.3s ease;
+        }
+
+        .message-nav-btn:hover {
+            color: #07c160;
+            transform: translateY(-10px) scale(1.1);
+        }
+
+        .message-nav-btn.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        #message-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .message-modal-card {
+            background: white;
+            width: 500px;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.2);
+            animation: modalPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPopUp {
+            from { opacity: 0; transform: scale(0.8) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .message-modal-card h3 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 22px;
+            color: #333;
+            text-align: center;
+        }
+
+        .message-modal-card textarea {
+            width: 100%;
+            height: 180px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 16px;
+            background-color: #f9f9f9;
+            resize: none;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+
+        .message-modal-card textarea:focus {
+            border-color: #07c160;
+            background-color: #fff;
+            box-shadow: 0 5px 15px rgba(7, 193, 96, 0.1);
+        }
+
+        .message-modal-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        .message-modal-btns button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .message-submit-btn {
+            background-color: #07c160;
+            color: white;
+        }
+
+        .message-submit-btn:hover {
+            background-color: #06ad56;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(7, 193, 96, 0.3);
+        }
+
+        .message-cancel-btn {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        .message-cancel-btn:hover {
+            background-color: #eee;
+        }
+
+        .moments-container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cover-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .cover-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        .cover-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: 'Dancing Script', 'Zhi Mang Xing', cursive;
+            font-size: 15vw;
+            font-weight: bold;
+            text-shadow: 0 5px 30px rgba(0,0,0,0.5);
+            z-index: 1;
+            pointer-events: none;
+            letter-spacing: 15px;
+            opacity: 0.95;
+            white-space: nowrap;
+        }
+
+        .content-area {
+            flex: 1;
+            background-color: #fff;
+            padding: 100px 0;
+            position: relative;
+            z-index: 5;
+            min-height: 100vh;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            padding-right: 600px;
+            padding-left: 100px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .message-board {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: 120px;
+            top: 45%;
+            transform: translateY(-40%) translateX(20px);
+            width: 380px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), 
+                        visibility 0.8s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .sidebar.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .profile-card, .extra-card {
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.12);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .extra-card {
+            padding: 30px 40px;
+        }
+
+        .profile-card:hover, .extra-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .profile-avatar {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            margin-bottom: 24px;
+            object-fit: cover;
+            border: 5px solid #f8f8f8;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-color: #07c160;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .profile-bio {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #f5f5f5;
+            padding-top: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .message-form {
+            margin-bottom: 60px;
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .message-form:hover {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+        }
+
+        .message-form textarea {
+            width: 100%;
+            height: 120px;
+            padding: 20px;
+            border: 1px solid #f5f5f5;
+            border-radius: 12px;
+            background-color: #fafafa;
+            resize: none;
+            font-size: 18px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .message-form textarea:focus {
+            border-color: #07c160;
+            background-color: #fff;
+        }
+
+        .message-form button {
+            margin-top: 20px;
+            padding: 12px 32px;
+            background-color: #07c160;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            float: right;
+            transition: all 0.3s ease;
+        }
+
+        .message-form button:hover {
+            background-color: #06ad56;
+            transform: scale(1.05);
+        }
+
+        .message-list {
+            clear: both;
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .message-item {
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+        }
+
+        .message-item:hover {
+            box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+        }
+
+        .message-content {
+            font-size: 18px;
+            color: #444;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-time {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .delete-btn {
+            font-size: 14px;
+            color: #ff4d4f;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background-color: #fff1f0;
+            color: #ff7875;
+        }
+
+        .message-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .like-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: #999;
+            font-size: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: #f5f5f5;
+            transition: all 0.3s ease;
+        }
+
+        .like-btn:hover {
+            background-color: #ffeef0;
+            color: #ff4d4f;
+            transform: scale(1.05);
+        }
+
+        .like-icon {
+            font-size: 18px;
+        }
+
+        .like-count {
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px;
+            color: #ff4d4f;
+            background: #fff1f0;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .password-modal .modal-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            text-align: center;
+            width: 320px;
+            animation: modalFadeIn 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .password-modal .modal-card h3 {
+            margin-bottom: 24px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .password-modal .modal-card input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 24px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 18px;
+            text-align: center;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .password-modal .modal-card input:focus {
+            border-color: #07c160;
+        }
+
+        .password-modal .modal-btns {
+            display: flex;
+            gap: 12px;
+        }
+
+        .password-modal .modal-btns button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .password-modal .confirm-btn {
+            background: #07c160;
+            color: white;
+        }
+
+        .password-modal .confirm-btn:hover {
+            background: #06ad56;
+            transform: translateY(-2px);
+        }
+
+        .password-modal .close-btn {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .edit-label {
+            display: block;
+            text-align: left;
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 5px;
+            margin-left: 5px;
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .edit-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .edit-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .save-btn, .cancel-btn {
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .save-btn {
+            background-color: #07c160;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        #profile-edit {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="message-nav-btn" onclick="showMessageModal()">留言</div>
+
+    <div id="message-modal">
+        <div class="message-modal-card">
+            <h3>写下你的留言</h3>
+            <textarea id="message-content" placeholder="在这里写下你的想法..."></textarea>
+            <div class="message-modal-btns">
+                <button type="button" class="message-cancel-btn" onclick="hideMessageModal()">取消</button>
+                <button type="button" class="message-submit-btn" onclick="submitMessage()">发布留言</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="moments-container">
+        <div class="cover-image-wrapper">
+            <img src="static/images/splash_bg.jpg" 
+                 onerror="this.src='https://picsum.photos/1920/1080?nature'" 
+                 alt="Cover Image" 
+                 class="cover-image">
+            <div class="cover-text">bianra</div>
+        </div>
+
+        <div class="content-area">
+            <div class="content-wrapper">
+                <div class="message-board">
+                    <div class="message-form">
+                        <textarea id="direct-message" placeholder="直接在这里写下你的留言..."></textarea>
+                        <button onclick="submitDirectMessage()">发布留言</button>
+                    </div>
+                    <div id="message-list" class="message-list">
+                        <div class="loading">正在加载留言...</div>
+                    </div>
+                </div>
+
+                <aside class="sidebar">
+                    <div class="profile-card">
+                        <img src="https://picsum.photos/200/200" alt="Profile" class="profile-avatar" onclick="handleAvatarClick()">
+                        <div id="profile-view">
+                            <h2 class="profile-name" id="profile-name">加载中...</h2>
+                            <p class="profile-bio" id="profile-bio">加载中...</p>
+                        </div>
+                        <div id="profile-edit">
+                            <label class="edit-label">名字</label>
+                            <input type="text" id="edit-name" class="edit-input">
+                            <label class="edit-label">简介</label>
+                            <textarea id="edit-bio" class="edit-textarea"></textarea>
+                            <label class="edit-label">公告栏</label>
+                            <textarea id="edit-announcement" class="edit-textarea"></textarea>
+                            <div class="edit-actions">
+                                <button type="button" onclick="cancelEdit()" class="cancel-btn">取消</button>
+                                <button type="button" onclick="saveProfile()" class="save-btn">保存</button>
+                            </div>
+                        </div>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" id="message-count">0</span>
+                                <span class="stat-label">留言</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="extra-card">
+                        <h3 style="margin-bottom: 15px; color: #333; font-size: 18px;">公告栏</h3>
+                        <p style="color: #888; font-size: 14px; line-height: 1.6; white-space: pre-line;" id="announcement">
+                            加载中...
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <div class="password-modal" id="password-modal">
+        <div class="modal-card">
+            <h3>请输入密码</h3>
+            <input type="password" id="password-input" placeholder="密码">
+            <div class="modal-btns">
+                <button type="button" class="confirm-btn" onclick="checkPassword()">确认</button>
+                <button type="button" class="close-btn" onclick="closePasswordModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://your-flask-app.onrender.com/api';
+
+        async function fetchMessages() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/messages`);
+                const messages = await response.json();
+                
+                const messageList = document.getElementById('message-list');
+                if (messages.length === 0) {
+                    messageList.innerHTML = '<p style="text-align: center; color: #999; margin-top: 40px;">暂无留言，快来抢沙发吧！</p>';
+                } else {
+                    messageList.innerHTML = messages.map(msg => `
+                        <div class="message-item" data-id="${msg.id}">
+                            <div class="message-header">
+                                <span class="message-time">${msg.created_at}</span>
+                                <a href="#" class="delete-btn" onclick="deleteMessage(${msg.id}, this)">删除</a>
+                            </div>
+                            <div class="message-content">${msg.content}</div>
+                            <div class="message-footer">
+                                <a href="#" class="like-btn" onclick="likeMessage(${msg.id}, this)">
+                                    <span class="like-icon">❤</span>
+                                    <span class="like-count">${msg.display_likes}</span>
+                                </a>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('message-count').textContent = messages.length;
+            } catch (error) {
+                document.getElementById('message-list').innerHTML = `
+                    <div class="error-message">
+                        加载留言失败: ${error.message}<br>
+                        <small>请确保 Flask 后端服务正在运行</small>
+                    </div>
+                `;
+            }
+        }
+
+        async function submitMessage() {
+            const content = document.getElementById('message-content').value.trim();
+            if (!content) return;
+
+            try {
+                await fetch(`${API_BASE_URL}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+
+                document.getElementById('message-content').value = '';
+                hideMessageModal();
+                fetchMessages();
+            } catch (error) {
+                alert('发布失败: ' + error.message);
+            }
+        }
+
+        async function submitDirectMessage() {
+            const content = document.getElementById('direct-message').value.trim();
+            if (!content) return;
+
+            try {
+                await fetch(`${API_BASE_URL}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+
+                document.getElementById('direct-message').value = '';
+                fetchMessages();
+            } catch (error) {
+                alert('发布失败: ' + error.message);
+            }
+        }
+
+        async function likeMessage(id, element) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/messages/${id}/like`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                element.querySelector('.like-count').textContent = data.display_likes;
+                element.closest('.message-item').querySelector('.like-count').textContent = data.display_likes;
+            } catch (error) {
+                alert('点赞失败: ' + error.message);
+            }
+        }
+
+        async function deleteMessage(id, element) {
+            if (!confirm('确定要删除这条留言吗？')) return;
+
+            try {
+                await fetch(`${API_BASE_URL}/messages/${id}`, {
+                    method: 'DELETE'
+                });
+                element.closest('.message-item').remove();
+                const remainingMessages = document.querySelectorAll('.message-item').length;
+                document.getElementById('message-count').textContent = remainingMessages;
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+
+        async function fetchProfile() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile`);
+                const profile = await response.json();
+                
+                document.getElementById('profile-name').textContent = profile.name;
+                document.getElementById('profile-bio').textContent = profile.bio;
+                document.getElementById('announcement').textContent = profile.announcement;
+                
+                document.getElementById('edit-name').value = profile.name;
+                document.getElementById('edit-bio').value = profile.bio;
+                document.getElementById('edit-announcement').value = profile.announcement;
+            } catch (error) {
+                document.getElementById('profile-name').textContent = 'bianra的小屋';
+                document.getElementById('profile-bio').textContent = '加载个人资料失败';
+                document.getElementById('announcement').textContent = '加载公告失败';
+            }
+        }
+
+        function showMessageModal() {
+            document.getElementById('message-modal').style.display = 'flex';
+        }
+
+        function hideMessageModal() {
+            document.getElementById('message-modal').style.display = 'none';
+        }
+
+        function handleAvatarClick() {
+            document.getElementById('password-modal').style.display = 'flex';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+        }
+
+        async function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            
+            if (password === '200709') {
+                document.getElementById('password-modal').style.display = 'none';
+                document.getElementById('profile-view').style.display = 'none';
+                document.getElementById('profile-edit').style.display = 'block';
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        function cancelEdit() {
+            document.getElementById('profile-view').style.display = 'block';
+            document.getElementById('profile-edit').style.display = 'none';
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('edit-name').value;
+            const bio = document.getElementById('edit-bio').value;
+            const announcement = document.getElementById('edit-announcement').value;
+            const password = prompt('请输入密码确认修改:');
+
+            if (!password) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, bio, announcement, password })
+                });
+
+                if (response.ok) {
+                    cancelEdit();
+                    fetchProfile();
+                    alert('保存成功！');
+                } else {
+                    alert('保存失败：密码错误');
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchMessages();
+            fetchProfile();
+            
+            document.querySelector('.message-nav-btn').classList.add('visible');
+            document.querySelector('.sidebar').classList.add('visible');
+        });
+    </script>
+</body>
+</html>

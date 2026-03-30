@@ -38,11 +38,6 @@ venv.bak/
 *.db
 *.sqlite
 *.sqlite3
-db.sqlite3
-
-# Static files (optional - uncomment if you don't want to commit static files)
-# static/
-# media/
 
 # OS
 .DS_Store
