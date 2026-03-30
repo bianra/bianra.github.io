@@ -875,13 +875,33 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', function() {
             fetchMessages();
             fetchProfile();
             
-            document.querySelector('.message-nav-btn').classList.add('visible');
-            document.querySelector('.sidebar').classList.add('visible');
+            // 监听滚动事件来控制留言按钮和侧边栏的显示/隐藏
+            window.addEventListener('scroll', handleScroll);
+            // 初始检查
+            handleScroll();
         });
+        
+        function handleScroll() {
+            const coverImage = document.querySelector('.cover-image-wrapper');
+            const coverRect = coverImage.getBoundingClientRect();
+            const messageBtn = document.querySelector('.message-nav-btn');
+            const sidebar = document.querySelector('.sidebar');
+            
+            // 当封面区域完全离开视口时显示
+            if (coverRect.bottom <= 0) {
+                messageBtn.classList.add('visible');
+                sidebar.classList.add('visible');
+            }
+            // 当封面区域开始进入视口时隐藏
+            else if (coverRect.top <= window.innerHeight && coverRect.bottom >= 0) {
+                messageBtn.classList.remove('visible');
+                sidebar.classList.remove('visible');
+            }
+        }
     </script>
 </body>
 </html>
