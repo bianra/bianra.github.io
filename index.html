@@ -1,0 +1,858 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}bianra小屋{% endblock %}</title>
+    <!-- 引入艺术字体，增加备用字体并确保加载优先级 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+        }
+
+        /* 左上角悬浮留言按钮 - 优化过渡效果 */
+        .message-nav-btn {
+            position: fixed;
+            top: 35px;
+            left: 40px;
+            font-size: 20px;
+            color: #333;
+            cursor: pointer;
+            z-index: 2001;
+            padding: 10px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px); /* 初始位移，增加滑入感 */
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        visibility 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                        color 0.3s ease;
+        }
+
+        .message-nav-btn:hover {
+            color: #07c160;
+            transform: translateY(-10px) scale(1.1);
+        }
+
+        .message-nav-btn.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0); /* 回到原位 */
+        }
+
+        .message-nav-btn.visible:hover {
+            transform: translateY(0) scale(1.1);
+        }
+
+        /* 留言悬浮窗样式 */
+        #message-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000; /* 最高层级 */
+        }
+
+        .message-modal-card {
+            background: white;
+            width: 500px;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.2);
+            animation: modalPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPopUp {
+            from { opacity: 0; transform: scale(0.8) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .message-modal-card h3 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 22px;
+            color: #333;
+            text-align: center;
+        }
+
+        .message-modal-card textarea {
+            width: 100%;
+            height: 180px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 16px;
+            background-color: #f9f9f9;
+            resize: none;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+
+        .message-modal-card textarea:focus {
+            border-color: #07c160;
+            background-color: #fff;
+            box-shadow: 0 5px 15px rgba(7, 193, 96, 0.1);
+        }
+
+        .message-modal-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        .message-modal-btns button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .message-submit-btn {
+            background-color: #07c160;
+            color: white;
+        }
+
+        .message-submit-btn:hover {
+            background-color: #06ad56;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(7, 193, 96, 0.3);
+        }
+
+        .message-cancel-btn {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        .message-cancel-btn:hover {
+            background-color: #eee;
+        }
+
+        /* 遮罩层 */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(3px);
+            display: none;
+            z-index: 1999;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .menu-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .moments-container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 上半部分图片容器 - 修改为全屏高度 */
+        .cover-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh; /* 初始全屏 */
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .cover-image {
+            position: fixed; /* 背景固定，产生上滑效果 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* 封面文字 "bianra" 艺术样式 - 确保在全屏居中 */
+        .cover-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: 'Dancing Script', 'Zhi Mang Xing', cursive;
+            font-size: 15vw; /* 响应式字号 */
+            font-weight: bold;
+            text-shadow: 0 5px 30px rgba(0,0,0,0.5); 
+            z-index: 1; 
+            pointer-events: none; 
+            letter-spacing: 15px;
+            opacity: 0.95;
+            white-space: nowrap;
+        }
+
+        /* 渐变模糊过渡层 - 已去除 */
+        .blur-overlay {
+            display: none;
+        }
+
+        /* 下半部分内容区布局 */
+        .content-area {
+            flex: 1;
+            background-color: #fff;
+            padding: 100px 0;
+            position: relative;
+            z-index: 5;
+            min-height: 100vh; /* 确保内容区至少占满一屏，保证可以完全划过封面 */
+        }
+
+        .content-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            padding-right: 600px; 
+            padding-left: 100px; 
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* 留言板区域 - 增大并优化自然感 */
+        .message-board {
+            width: 100%;
+            max-width: 1000px; /* 进一步增大宽度 */
+        }
+
+        /* 侧边栏个人信息 - 优化过渡效果 */
+        .sidebar {
+            position: fixed;
+            right: 120px; 
+            top: 45%; 
+            transform: translateY(-40%) translateX(20px); /* 初始位移 */
+            width: 380px; 
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 30px; 
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), 
+                        visibility 0.8s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* 侧边栏显示状态 */
+        .sidebar.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .profile-card, .extra-card {
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 24px;
+            padding: 50px 40px; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.12); 
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .extra-card {
+            padding: 30px 40px; /* 下方小框高度可以稍微矮一点 */
+        }
+
+        .profile-card:hover, .extra-card:hover {
+            transform: translateY(-12px); 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .profile-avatar {
+            width: 130px; /* 同步放大头像 */
+            height: 130px;
+            border-radius: 50%;
+            margin-bottom: 24px;
+            object-fit: cover;
+            border: 5px solid #f8f8f8;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-color: #07c160;
+        }
+
+        .profile-name {
+            font-size: 24px; /* 增大名称字号 */
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .profile-bio {
+            font-size: 16px; /* 增大简介字号 */
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        /* 编辑模式样式 */
+        .edit-label {
+            display: block;
+            text-align: left;
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 5px;
+            margin-left: 5px;
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .edit-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .edit-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .save-btn, .cancel-btn {
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .save-btn {
+            background-color: #07c160;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+
+        /* 错误提示全屏大字特效 - 重新设计 */
+        #error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95); /* 更黑更沉浸 */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* 确保在最最顶层 */
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .error-content-box {
+            position: relative;
+            padding: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .error-text {
+            color: #ff3333; /* 鲜艳的红色 */
+            font-size: 8vw; /* 响应式字体大小 */
+            font-weight: 900;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            text-shadow: 
+                0 0 10px rgba(255, 0, 0, 0.8),
+                0 0 30px rgba(255, 0, 0, 0.5);
+            animation: glitch-shake 0.2s infinite; /* 强烈的抖动特效 */
+            user-select: none;
+        }
+
+        @keyframes glitch-shake {
+            0% { transform: translate(0, 0) skew(0deg); }
+            20% { transform: translate(-10px, 5px) skew(2deg); filter: hue-rotate(90deg); }
+            40% { transform: translate(10px, -5px) skew(-2deg); }
+            60% { transform: translate(-5px, -10px) skew(1deg); filter: contrast(150%); }
+            80% { transform: translate(5px, 10px) skew(-1deg); }
+            100% { transform: translate(0, 0) skew(0deg); }
+        }
+
+        /* 故障扫描线背景 */
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(255, 0, 0, 0.05) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* 密码输入模态框样式 */
+        #password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            text-align: center;
+            width: 320px;
+            animation: modalFadeIn 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-card h3 {
+            margin-bottom: 24px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .modal-card input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 24px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 18px;
+            text-align: center;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .modal-card input:focus {
+            border-color: #07c160;
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btns button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .confirm-btn {
+            background: #07c160;
+            color: white;
+        }
+
+        .confirm-btn:hover {
+            background: #06ad56;
+            transform: translateY(-2px);
+        }
+
+        .close-btn {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #f5f5f5;
+            padding-top: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .message-form {
+            margin-bottom: 60px;
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .message-form:hover {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+        }
+
+        .message-form textarea {
+            width: 100%;
+            height: 120px;
+            padding: 20px;
+            border: 1px solid #f5f5f5; /* 边框调浅一点 */
+            border-radius: 12px;
+            background-color: #fafafa;
+            resize: none;
+            font-size: 18px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .message-form textarea:focus {
+            border-color: #07c160;
+            background-color: #fff;
+        }
+
+        .message-form button {
+            margin-top: 20px;
+            padding: 12px 32px;
+            background-color: #07c160;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            float: right;
+            transition: all 0.3s ease;
+        }
+
+        .message-form button:hover {
+            background-color: #06ad56;
+            transform: scale(1.05);
+        }
+
+        .message-list {
+            clear: both;
+            margin-top: 0; /* 移除顶部外边距，因为留言表单已经移动了 */
+            display: flex;
+            flex-direction: column;
+            gap: 30px; /* 卡片之间的间距 */
+        }
+
+        .message-item {
+            background-color: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+        }
+
+        .message-item:hover {
+            box-shadow: 0 12px 35px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+        }
+
+        /* 留言内容字体优化 */
+        .message-content {
+            font-size: 18px;
+            color: #444;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-time {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .delete-btn {
+            font-size: 14px;
+            color: #ff4d4f;
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background-color: #fff1f0;
+            color: #ff7875;
+        }
+
+        .message-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .like-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: #999;
+            font-size: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: #f5f5f5;
+            transition: all 0.3s ease;
+        }
+
+        .like-btn:hover {
+            background-color: #ffeef0;
+            color: #ff4d4f;
+            transform: scale(1.05);
+        }
+
+        .like-icon {
+            font-size: 18px;
+        }
+
+        .like-count {
+            font-weight: bold;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 左上角悬浮留言按钮 -->
+    <div class="message-nav-btn" onclick="showMessageModal()">留言</div>
+
+    <!-- 留言悬浮窗 -->
+    <div id="message-modal">
+        <div class="message-modal-card">
+            <h3>写下你的留言</h3>
+            <form method="POST" action="{% url 'home' %}">
+                {% csrf_token %}
+                <textarea name="content" placeholder="在这里写下你的想法..." required></textarea>
+                <div class="message-modal-btns">
+                    <button type="button" class="message-cancel-btn" onclick="hideMessageModal()">取消</button>
+                    <button type="submit" class="message-submit-btn">发布留言</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 菜单遮罩层已移除 -->
+
+    <div class="moments-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- 错误提示遮罩层 (重新设计) -->
+    <div id="error-overlay" onclick="hideErrorOverlay()">
+        <div class="scanline"></div>
+        <div class="error-content-box">
+            <div class="error-text" id="error-overlay-text">你要篡改我的人生吗</div>
+        </div>
+    </div>
+
+    <!-- 密码输入模态框 -->
+    <div id="password-modal">
+        <div class="modal-card">
+            <h3>身份验证</h3>
+            <input type="password" id="modal-password-input" placeholder="请输入编辑密码">
+            <div class="modal-btns">
+                <button class="close-btn" onclick="hidePasswordModal()">取消</button>
+                <button class="confirm-btn" onclick="verifyPassword()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 留言弹窗逻辑
+        function showMessageModal() {
+            const modal = document.getElementById('message-modal');
+            modal.style.display = 'flex';
+            
+            const textarea = modal.querySelector('textarea');
+            textarea.value = '';
+            textarea.focus();
+            
+            // 弹出弹窗时禁用背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideMessageModal() {
+            document.getElementById('message-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // 个人信息编辑逻辑
+        function handleAvatarClick() {
+            showPasswordModal();
+        }
+
+        function showPasswordModal() {
+            const modal = document.getElementById('password-modal');
+            const input = document.getElementById('modal-password-input');
+            modal.style.display = 'flex';
+            input.value = '';
+            input.focus();
+
+            // 回车提交
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') verifyPassword();
+            };
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+        }
+
+        function verifyPassword() {
+            const password = document.getElementById('modal-password-input').value;
+            hidePasswordModal();
+            
+            if (password === '200709') {
+                document.getElementById('profile-view').style.display = 'none';
+                document.getElementById('profile-edit').style.display = 'block';
+                document.getElementById('edit-password').value = password;
+            } else {
+                showErrorOverlay();
+            }
+        }
+
+        function cancelEdit() {
+            document.getElementById('profile-view').style.display = 'block';
+            document.getElementById('profile-edit').style.display = 'none';
+        }
+
+        function showErrorOverlay(customText) {
+            const overlay = document.getElementById('error-overlay');
+            const textElement = document.getElementById('error-overlay-text');
+            
+            if (customText) {
+                textElement.innerText = customText;
+            } else {
+                textElement.innerText = "你要篡改我的人生吗";
+            }
+            
+            overlay.style.display = 'flex';
+            
+            // 3秒后自动关闭
+            setTimeout(hideErrorOverlay, 3000);
+        }
+
+        function hideErrorOverlay() {
+            const overlay = document.getElementById('error-overlay');
+            overlay.style.display = 'none';
+        }
+
+        // 页面加载完成后检查 Django 消息 - 已移除针对留言失败的大字逻辑，改为模板内直接显示
+        window.addEventListener('DOMContentLoaded', () => {
+            // 此处不再处理留言失败的大字显示，仅保留函数供密码错误等 JS 调用
+        });
+
+        const coverImage = document.querySelector('.cover-image');
+        const container = window;
+
+        // 桌面端滚动视差 + 渐变显示 + 侧边栏显示逻辑
+        container.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const coverText = document.querySelector('.cover-text');
+            const sidebar = document.querySelector('.sidebar');
+            const viewportHeight = window.innerHeight;
+            
+            if (coverText) {
+                // 随着滚动，文字逐渐上移并消失
+                const opacity = Math.max(0, 1 - scrollTop / 400);
+                const translateY = -50 - (scrollTop * 0.1); 
+                coverText.style.opacity = opacity;
+                coverText.style.transform = `translate(-50%, ${translateY}%)`;
+            }
+
+            // 侧边栏与留言按钮逻辑：下滑至封面完全消失后出现
+            if (sidebar) {
+                const messageBtn = document.querySelector('.message-nav-btn');
+                if (scrollTop >= viewportHeight - 100) {
+                    sidebar.classList.add('visible');
+                    if (messageBtn) messageBtn.classList.add('visible');
+                } else {
+                    sidebar.classList.remove('visible');
+                    if (messageBtn) messageBtn.classList.remove('visible');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
