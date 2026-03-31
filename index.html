@@ -1026,11 +1026,13 @@
 
                     <div class="extra-card">
                         <div style="display: flex; flex-direction: column; gap: 15px;">
-                            <button onclick="showMessageModal()" style="width: 100%; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s;">
+                            <button onclick="showMessageModal()" style="width: 100%; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s; display: flex; justify-content: space-between; align-items: center;">
                                 留言
+                                <span id="message-count-btn" style="font-size: 14px; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px;">0</span>
                             </button>
-                            <button onclick="showArticleModal()" style="width: 100%; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s;">
+                            <button onclick="showArticleModal()" style="width: 100%; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s; display: flex; justify-content: space-between; align-items: center;">
                                 随笔
+                                <span id="article-count-btn" style="font-size: 14px; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px;">0</span>
                             </button>
                             <style>
                                 .extra-card button:hover {
@@ -1096,6 +1098,7 @@
                     `).join('');
                 }
                 document.getElementById('message-count').textContent = messages.length;
+                document.getElementById('message-count-btn').textContent = messages.length;
             } catch (error) {
                 document.getElementById('message-list').innerHTML = `
                     <div class="error-message">
@@ -1235,6 +1238,7 @@
                         </div>
                     `).join('');
                 }
+                document.getElementById('article-count-btn').textContent = articles.length;
             } catch (error) {
                 document.getElementById('article-list').innerHTML = `
                     <div class="error-message">
@@ -1345,6 +1349,7 @@
             setFixedCoverImage();
             
             fetchMessages();
+            fetchArticles();
             fetchProfile();
             
             // 监听滚动事件来控制留言按钮和侧边栏的显示/隐藏
