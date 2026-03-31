@@ -844,32 +844,48 @@
                 top: 20px;
                 left: 20px;
                 gap: 10px;
+                z-index: 100;
             }
 
             .cover-avatar {
                 width: 40px;
                 height: 40px;
+                border-width: 2px;
             }
 
             .cover-header-text {
                 font-size: 18px;
+                text-shadow: 0 2px 10px rgba(0,0,0,0.5);
             }
 
             /* 封面文字 */
             .cover-text {
                 font-size: 25vw;
                 letter-spacing: 8px;
+                text-shadow: 0 5px 20px rgba(0,0,0,0.6);
             }
 
             /* 内容区域 */
             .content-area {
-                padding: 60px 0;
+                padding: 40px 0;
             }
 
             /* 内容包装器 */
             .content-wrapper {
                 flex-direction: column;
-                padding: 0 20px;
+                padding: 0 16px;
+            }
+
+            /* 内容标签 */
+            .content-tabs {
+                gap: 10px;
+                margin-bottom: 20px;
+                padding-bottom: 8px;
+            }
+
+            .content-tab {
+                padding: 10px 16px;
+                font-size: 16px;
             }
 
             /* 侧边栏 */
@@ -880,54 +896,145 @@
                 transform: none;
                 width: 100%;
                 max-width: 100%;
-                margin-top: 40px;
-                gap: 20px;
+                margin-top: 30px;
+                gap: 16px;
             }
 
             /* 卡片样式 */
             .profile-card, .extra-card {
-                padding: 30px 20px;
-                border-radius: 20px;
+                padding: 24px 16px;
+                border-radius: 16px;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.08);
             }
 
             /* 头像 */
             .profile-avatar {
-                width: 100px;
-                height: 100px;
+                width: 80px;
+                height: 80px;
+                margin-bottom: 16px;
+            }
+
+            /* 个人资料 */
+            .profile-name {
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+
+            .profile-bio {
+                font-size: 14px;
+                line-height: 1.5;
+                margin-bottom: 20px;
             }
 
             /* 留言项 */
             .message-item {
-                padding: 20px 24px;
-                border-radius: 16px;
+                padding: 16px 20px;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }
 
             /* 留言内容 */
             .message-content {
-                font-size: 16px;
+                font-size: 15px;
                 line-height: 1.6;
+            }
+
+            /* 留言头部 */
+            .message-header {
+                margin-bottom: 8px;
+            }
+
+            .message-time {
+                font-size: 12px;
+            }
+
+            /* 留言底部 */
+            .message-footer {
+                margin-top: 12px;
+            }
+
+            .like-btn {
+                padding: 4px 10px;
+                font-size: 14px;
+            }
+
+            /* 文章项 */
+            .article-item {
+                padding: 16px 20px;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            }
+
+            .article-title {
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+
+            .article-excerpt {
+                font-size: 14px;
+                line-height: 1.5;
+                margin-bottom: 12px;
+            }
+
+            .article-time {
+                font-size: 12px;
+            }
+
+            .article-view-btn, .article-delete-btn {
+                padding: 4px 10px;
+                font-size: 12px;
             }
 
             /* 模态框 */
             .message-modal-card {
-                width: 90%;
+                width: 95%;
                 max-width: 400px;
-                padding: 30px 20px;
-                border-radius: 20px;
+                padding: 24px 16px;
+                border-radius: 16px;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            }
+
+            .article-modal-card {
+                width: 95%;
+                max-width: 400px;
+                padding: 24px 16px;
+                border-radius: 16px;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.15);
             }
 
             /* 模态框文本域 */
             .message-modal-card textarea {
-                height: 150px;
-                font-size: 16px;
-                padding: 16px;
+                height: 120px;
+                font-size: 15px;
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+
+            #article-content {
+                height: 200px;
+                font-size: 15px;
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+
+            /* 模态框按钮 */
+            .message-modal-btns, .article-modal-btns {
+                gap: 10px;
+            }
+
+            .message-modal-btns button, .article-modal-btns button {
+                padding: 12px;
+                font-size: 15px;
             }
 
             /* 密码模态框 */
             .password-modal .modal-card {
                 width: 90%;
                 max-width: 300px;
-                padding: 30px 20px;
+                padding: 24px 16px;
+                border-radius: 16px;
             }
 
             /* 统计项 */
@@ -935,16 +1042,43 @@
                 padding-top: 10px;
             }
 
-            /* 公告栏 */
-            .extra-card h3 {
+            .stat-value {
                 font-size: 16px;
-                margin-bottom: 10px;
             }
 
-            /* 公告栏内容 */
-            .extra-card p {
-                font-size: 13px;
-                line-height: 1.5;
+            .stat-label {
+                font-size: 11px;
+            }
+
+            /* 公告栏按钮 */
+            .extra-card button {
+                padding: 10px 14px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+
+            /* 表单元素 */
+            .edit-input {
+                padding: 8px;
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .edit-textarea {
+                padding: 8px;
+                font-size: 14px;
+                margin-bottom: 8px;
+                height: 80px;
+            }
+
+            .edit-actions {
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            .save-btn, .cancel-btn {
+                padding: 6px 12px;
+                font-size: 14px;
             }
         }
 
