@@ -1,6 +1,6 @@
 # 我的 Python 网站
 
-这是一个使用 Python 和 Django 框架开发的 Web 项目。
+这是一个使用 Python 和 Flask 框架开发的个人留言板 Web 项目。
 
 ## 快速开始
 
@@ -18,14 +18,30 @@
 
 3. **运行开发服务器**
    ```bash
-   python manage.py runserver
+   python app.py
    ```
 
-访问 [http://127.0.0.1:8000/](http://127.0.0.1:8000/) 查看效果。
+访问 [http://127.0.0.1:5000/](http://127.0.0.1:5000/) 查看效果。
 
 ## 项目结构
 
-- `config/`: 项目配置文件
-- `core/`: 核心应用逻辑
+- `app.py`: Flask 应用主文件
+- `index.html`: 前端页面（纯 HTML + JavaScript）
+- `static/`: 静态资源目录
 - `venv/`: Python 虚拟环境
-- `manage.py`: Django 管理脚本
+
+## 部署
+
+项目已配置 Procfile，支持部署到 Render 等平台：
+
+```bash
+gunicorn app:app
+```
+
+## 功能特性
+
+- 📝 留言板：发布、查看、删除留言
+- ❤️ 点赞功能
+- 👤 个人资料管理
+- 🔒 密码保护的管理后台（默认密码：200709）
+- 📱 响应式设计，支持移动端
