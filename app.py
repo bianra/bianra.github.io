@@ -28,6 +28,12 @@ class Profile(db.Model):
     bio = db.Column(db.Text, default="这是一段关于我的介绍。在这里你可以记录心情，留下印记。欢迎大家留言互动！")
     announcement = db.Column(db.Text, default="欢迎来到 bianra 的小屋！\n这里是一个自由留言的空间。\n点击头像可以编辑主页信息。")
 
+class Article(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.datetime.now(timezone))
+
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     messages = Message.query.order_by(Message.created_at.desc()).all()
@@ -117,6 +123,44 @@ def update_profile():
         'bio': profile.bio,
         'announcement': profile.announcement
     })
+
+@app.route('/api/articles', methods=['GET'])
+def get_articles():
+    articles = Article.query.order_by(Article.created_at.desc()).all()
+    return jsonify([{
+        'id': a.id,
+        'title': a.title,
+        'content': a.content,
+        'created_at': a.created_at.astimezone(timezone).strftime('%Y-%m-%d %H:%M')
+    } for a in articles])
+
+@app.route('/api/articles', methods=['POST'])
+def create_article():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    
+    if not title or not content:
+        return jsonify({'error': '标题和内容不能为空'}), 400
+    
+    article = Article(title=title, content=content)
+    db.session.add(article)
+    db.session.commit()
+    
+    return jsonify({
+        'id': article.id,
+        'title': article.title,
+        'content': article.content,
+        'created_at': article.created_at.astimezone(timezone).strftime('%Y-%m-%d %H:%M')
+    }), 201
+
+@app.route('/api/articles/<int:article_id>', methods=['DELETE'])
+def delete_article(article_id):
+    article = Article.query.get_or_404(article_id)
+    db.session.delete(article)
+    db.session.commit()
+    
+    return jsonify({'message': '删除成功'})
 
 if __name__ == '__main__':
     app.run(debug=True)
