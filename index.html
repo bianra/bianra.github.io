@@ -955,6 +955,18 @@
         </div>
     </div>
 
+    <div id="article-modal">
+        <div class="article-modal-card">
+            <h3>发布文章</h3>
+            <input type="text" id="article-title" placeholder="文章标题" class="article-title-input">
+            <textarea id="article-content" placeholder="文章内容..."></textarea>
+            <div class="article-modal-btns">
+                <button type="button" class="article-cancel-btn" onclick="hideArticleModal()">取消</button>
+                <button type="button" class="article-submit-btn" onclick="submitArticle()">发布文章</button>
+            </div>
+        </div>
+    </div>
+
     <div class="moments-container">
         <div class="cover-image-wrapper">
             <img src="static/images/splash_bg.jpg" 
