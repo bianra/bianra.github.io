@@ -509,23 +509,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.15);
         }
 
-        .extra-card {
-            position: relative;
-            cursor: pointer;
-        }
 
-        .announcement-menu button:hover {
-            background-color: #f5f5f5;
-        }
-
-        /* 响应式设计 - 移动端适配 */
-        @media (max-width: 768px) {
-            .announcement-menu {
-                position: static;
-                margin-top: 10px;
-                width: 100%;
-            }
-        }
 
         .profile-avatar {
             width: 130px;
@@ -1040,19 +1024,24 @@
                         </div>
                     </div>
 
-                    <div class="extra-card" onclick="showAnnouncementMenu()">
-                        <h3 style="margin-bottom: 15px; color: #333; font-size: 18px;">公告栏</h3>
-                        <p style="color: #888; font-size: 14px; line-height: 1.6; white-space: pre-line;" id="announcement">
-                            加载中...
-                        </p>
-                        <div style="margin-top: 15px; font-size: 12px; color: #07c160; cursor: pointer;">点击查看或发布内容</div>
-                    </div>
-
-                    <div class="announcement-menu" id="announcement-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #f0f0f0; border-radius: 12px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000;">
-                        <button onclick="showMessageModal(); hideAnnouncementMenu();" style="display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; font-size: 14px; color: #333; cursor: pointer; border-radius: 8px; transition: background 0.3s;">发布留言</button>
-                        <button onclick="showArticleModal(); hideAnnouncementMenu();" style="display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; font-size: 14px; color: #333; cursor: pointer; border-radius: 8px; transition: background 0.3s;">发布文章</button>
-                        <button onclick="switchTab('messages'); hideAnnouncementMenu();" style="display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; font-size: 14px; color: #333; cursor: pointer; border-radius: 8px; transition: background 0.3s;">查看留言</button>
-                        <button onclick="switchTab('articles'); hideAnnouncementMenu();" style="display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; font-size: 14px; color: #333; cursor: pointer; border-radius: 8px; transition: background 0.3s;">查看文章</button>
+                    <div class="extra-card">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <button onclick="showMessageModal()" style="display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s;">
+                                <span style="font-size: 20px;">💬</span>
+                                <span>留言</span>
+                            </button>
+                            <button onclick="showArticleModal()" style="display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 12px 16px; border: none; background: #f9f9f9; font-size: 16px; color: #333; cursor: pointer; border-radius: 12px; transition: all 0.3s;">
+                                <span style="font-size: 20px;">📝</span>
+                                <span>随笔</span>
+                            </button>
+                            <style>
+                                .extra-card button:hover {
+                                    background: #f0f0f0;
+                                    transform: translateY(-2px);
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                                }
+                            </style>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -1366,25 +1355,7 @@
             handleScroll();
         });
         
-        function showAnnouncementMenu() {
-            const menu = document.getElementById('announcement-menu');
-            menu.style.display = 'block';
-        }
 
-        function hideAnnouncementMenu() {
-            const menu = document.getElementById('announcement-menu');
-            menu.style.display = 'none';
-        }
-
-        // 点击页面其他地方关闭菜单
-        document.addEventListener('click', function(event) {
-            const menu = document.getElementById('announcement-menu');
-            const extraCard = document.querySelector('.extra-card');
-            
-            if (!extraCard.contains(event.target) && !menu.contains(event.target)) {
-                hideAnnouncementMenu();
-            }
-        });
 
         function handleScroll() {
             const coverImage = document.querySelector('.cover-image-wrapper');
