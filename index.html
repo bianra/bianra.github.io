@@ -1048,22 +1048,10 @@
     <script>
         const API_BASE_URL = 'https://bianra-backend.onrender.com/api';
         
-        // 封面图片库
-        const coverImages = [
-            'static/images/splash_bg.jpg',
-            'https://picsum.photos/1920/1080?nature',
-            'https://picsum.photos/1920/1080?landscape',
-            'https://picsum.photos/1920/1080?mountain',
-            'https://picsum.photos/1920/1080?ocean',
-            'https://picsum.photos/1920/1080?forest'
-        ];
-        
-        // 随机选择封面图片
-        function setRandomCoverImage() {
+        // 固定封面图片
+        function setFixedCoverImage() {
             const coverImage = document.querySelector('.cover-image');
-            const randomIndex = Math.floor(Math.random() * coverImages.length);
-            const randomImage = coverImages[randomIndex];
-            coverImage.src = randomImage;
+            coverImage.src = 'static/images/cover.jpg';
             // 设置备用图片
             coverImage.onerror = function() {
                 this.src = 'https://picsum.photos/1920/1080?nature';
@@ -1228,8 +1216,8 @@
                             <div class="article-meta">
                                 <span class="article-time">${article.created_at}</span>
                                 <div class="article-actions">
-                                    <a href="#" class="article-view-btn" onclick="viewArticle(${article.id})">查看</a>
-                                    <a href="#" class="article-delete-btn" onclick="deleteArticle(${article.id}, this)">删除</a>
+                                    <a href="#" class="article-view-btn" onclick="viewArticle(${article.id})")">查看</a>
+                                    <a href="#" class="article-delete-btn" onclick="deleteArticle(${article.id}, this)")">删除</a>
                                 </div>
                             </div>
                         </div>
@@ -1341,8 +1329,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', function() {
-            // 设置随机封面图片
-            setRandomCoverImage();
+            // 设置固定封面图片
+            setFixedCoverImage();
             
             fetchMessages();
             fetchProfile();
