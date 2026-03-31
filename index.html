@@ -330,6 +330,35 @@
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
+        .menu-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            cursor: pointer;
+            color: #333;
+            font-size: 24px;
+            z-index: 2001;
+            padding: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        visibility 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+                        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                        color 0.3s ease;
+        }
+
+        .menu-btn.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-btn:hover {
+            color: #07c160;
+            transform: translateY(0) scale(1.1);
+        }
+
         .cover-text {
             position: absolute;
             top: 50%;
@@ -848,8 +877,10 @@
             }
 
             .menu-btn {
-                font-size: 20px !important;
-                margin-right: 12px !important;
+                top: 20px;
+                left: 16px;
+                font-size: 20px;
+                padding: 8px;
             }
 
             .cover-avatar {
@@ -1155,10 +1186,10 @@
                  alt="Cover Image" 
                  class="cover-image">
             <div class="cover-header">
-                <div class="menu-btn" onclick="toggleMenu()" style="cursor: pointer; color: white; font-size: 24px; margin-right: 20px; z-index: 1000;">
+                <div class="menu-btn" id="menu-btn" onclick="toggleMenu()">
                     ☰
                 </div>
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTUgMjBDMTAgMjAgNSAyNSA1IDMwczUgMTAgMTAgMTAgMTAtNSAxMC0xMC01LTEwLTEwLTEwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNMzUgMjBDMzAgMjAgMjUgMjUgMjUgMzBzNSAxMCAxMCAxMCAxMC01IDEwLTEwLTUtMTAtMTAtMTBaIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0yNSA0MEw3IDQwTDcuNSA0My41TDI1IDQzLjVMMzIuNSA0My41TDMzIDQwTDI1IDQwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=" alt="Avatar" class="cover-avatar">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 50 50'%3E%3Ccircle cx='15' cy='20' r='8' fill='%23333'/%3E%3Ccircle cx='35' cy='20' r='8' fill='%23333'/%3E%3Cpath d='M 15 10 Q 15 5 20 5 Q 25 5 25 10' stroke='%23333' stroke-width='2' fill='none'/%3E%3Cpath d='M 35 10 Q 35 5 30 5 Q 25 5 25 10' stroke='%23333' stroke-width='2' fill='none'/%3E%3Cpath d='M 20 35 Q 25 40 30 35' stroke='%23333' stroke-width='2' fill='none'/%3E%3C/svg%3E" alt="Avatar" class="cover-avatar">
                 <div class="cover-header-text">bianra</div>
             </div>
 
@@ -1595,12 +1626,14 @@
             const coverImage = document.querySelector('.cover-image-wrapper');
             const coverRect = coverImage.getBoundingClientRect();
             const sidebar = document.querySelector('.sidebar');
+            const menuBtn = document.getElementById('menu-btn');
             
             // 检测是否为移动设备
             const isMobile = window.innerWidth <= 768;
             
             // 当封面区域完全离开视口时显示
             if (coverRect.bottom <= 0) {
+                menuBtn.classList.add('visible');
                 // 在移动设备上，侧边栏是静态的，不需要隐藏
                 if (!isMobile) {
                     sidebar.classList.add('visible');
@@ -1608,6 +1641,7 @@
             }
             // 当封面区域开始进入视口时隐藏
             else if (coverRect.top <= window.innerHeight && coverRect.bottom >= 0) {
+                menuBtn.classList.remove('visible');
                 // 在移动设备上，侧边栏是静态的，不需要隐藏
                 if (!isMobile) {
                     sidebar.classList.remove('visible');
