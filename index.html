@@ -1261,7 +1261,6 @@
                         </div>
                     `).join('');
                 }
-                document.getElementById('message-count').textContent = messages.length;
                 document.getElementById('message-count-btn').textContent = messages.length;
             } catch (error) {
                 document.getElementById('message-list').innerHTML = `
@@ -1315,7 +1314,7 @@
                 });
                 element.closest('.message-item').remove();
                 const remainingMessages = document.querySelectorAll('.message-item').length;
-                document.getElementById('message-count').textContent = remainingMessages;
+                document.getElementById('message-count-btn').textContent = remainingMessages;
             } catch (error) {
                 alert('删除失败: ' + error.message);
             }
