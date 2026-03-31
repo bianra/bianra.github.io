@@ -969,8 +969,7 @@
 
     <div class="moments-container">
         <div class="cover-image-wrapper">
-            <img src="static/images/splash_bg.jpg" 
-                 onerror="this.src='https://picsum.photos/1920/1080?nature'" 
+            <img src="" 
                  alt="Cover Image" 
                  class="cover-image">
             <div class="cover-text">bianra</div>
@@ -1048,6 +1047,28 @@
 
     <script>
         const API_BASE_URL = 'https://bianra-backend.onrender.com/api';
+        
+        // 封面图片库
+        const coverImages = [
+            'static/images/splash_bg.jpg',
+            'https://picsum.photos/1920/1080?nature',
+            'https://picsum.photos/1920/1080?landscape',
+            'https://picsum.photos/1920/1080?mountain',
+            'https://picsum.photos/1920/1080?ocean',
+            'https://picsum.photos/1920/1080?forest'
+        ];
+        
+        // 随机选择封面图片
+        function setRandomCoverImage() {
+            const coverImage = document.querySelector('.cover-image');
+            const randomIndex = Math.floor(Math.random() * coverImages.length);
+            const randomImage = coverImages[randomIndex];
+            coverImage.src = randomImage;
+            // 设置备用图片
+            coverImage.onerror = function() {
+                this.src = 'https://picsum.photos/1920/1080?nature';
+            };
+        }
 
         async function fetchMessages() {
             try {
@@ -1320,6 +1341,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', function() {
+            // 设置随机封面图片
+            setRandomCoverImage();
+            
             fetchMessages();
             fetchProfile();
             
