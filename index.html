@@ -303,6 +303,33 @@
             z-index: -1;
         }
 
+        .cover-header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .cover-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .cover-header-text {
+            color: white;
+            font-family: 'Dancing Script', 'Zhi Mang Xing', cursive;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
         .cover-text {
             position: absolute;
             top: 50%;
@@ -812,20 +839,20 @@
 
         /* 响应式设计 - 移动端适配 */
         @media (max-width: 768px) {
-            /* 留言按钮 */
-            .message-nav-btn {
+            /* 封面头部 */
+            .cover-header {
                 top: 20px;
                 left: 20px;
-                font-size: 16px;
-                padding: 8px;
+                gap: 10px;
             }
 
-            /* 文章按钮 */
-            .article-nav-btn {
-                top: 20px;
-                left: 90px;
-                font-size: 16px;
-                padding: 8px;
+            .cover-avatar {
+                width: 40px;
+                height: 40px;
+            }
+
+            .cover-header-text {
+                font-size: 18px;
             }
 
             /* 封面文字 */
@@ -973,6 +1000,10 @@
             <img src="" 
                  alt="Cover Image" 
                  class="cover-image">
+            <div class="cover-header">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTUgMjBDMTAgMjAgNSAyNSA1IDMwczUgMTAgMTAgMTAgMTAtNSAxMC0xMC01LTEwLTEwLTEwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNMzUgMjBDMzAgMjAgMjUgMjUgMjUgMzBzNSAxMCAxMCAxMCAxMC01IDEwLTEwLTUtMTAtMTAtMTBaIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0yNSA0MEw3IDQwTDcuNSA0My41TDI1IDQzLjVMMzIuNSA0My41TDMzIDQwTDI1IDQwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=" alt="Avatar" class="cover-avatar">
+                <div class="cover-header-text">bianra</div>
+            </div>
             <div class="cover-text">bianra</div>
         </div>
 
