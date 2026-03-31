@@ -21,72 +21,6 @@
             background-color: #fff;
         }
 
-        .message-nav-btn {
-            position: fixed;
-            top: 35px;
-            left: 40px;
-            font-size: 20px;
-            color: #333;
-            cursor: pointer;
-            z-index: 2001;
-            padding: 10px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
-                        visibility 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
-                        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-                        color 0.3s ease;
-        }
-
-        .message-nav-btn:hover {
-            color: #07c160;
-            transform: translateY(-10px) scale(1.1);
-        }
-
-        .message-nav-btn.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .article-nav-btn {
-            position: fixed;
-            top: 35px;
-            left: 120px;
-            font-size: 20px;
-            color: #333;
-            cursor: pointer;
-            z-index: 2001;
-            padding: 10px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
-                        visibility 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
-                        transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-                        color 0.3s ease;
-        }
-
-        .article-nav-btn:hover {
-            color: #07c160;
-            transform: translateY(-10px) scale(1.1);
-        }
-
-        .article-nav-btn.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
         #message-modal {
             position: fixed;
             top: 0;
@@ -1332,7 +1266,6 @@
                     `).join('');
                 }
                 document.getElementById('message-count').textContent = messages.length;
-                document.getElementById('message-count-btn').textContent = messages.length;
             } catch (error) {
                 document.getElementById('message-list').innerHTML = `
                     <div class="error-message">
@@ -1398,7 +1331,6 @@
                 
                 document.getElementById('profile-name').textContent = profile.name;
                 document.getElementById('profile-bio').textContent = profile.bio;
-                document.getElementById('announcement').textContent = profile.announcement;
                 
                 document.getElementById('edit-name').value = profile.name;
                 document.getElementById('edit-bio').value = profile.bio;
@@ -1406,7 +1338,6 @@
             } catch (error) {
                 document.getElementById('profile-name').textContent = 'bianra的小屋';
                 document.getElementById('profile-bio').textContent = '加载个人资料失败';
-                document.getElementById('announcement').textContent = '加载公告失败';
             }
         }
 
@@ -1472,7 +1403,6 @@
                         </div>
                     `).join('');
                 }
-                document.getElementById('article-count-btn').textContent = articles.length;
             } catch (error) {
                 document.getElementById('article-list').innerHTML = `
                     <div class="error-message">
