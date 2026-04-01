@@ -1229,8 +1229,8 @@
             <div class="content-wrapper">
                 <div class="message-board">
                     <div class="content-tabs">
-                        <button class="content-tab active" onclick="switchTab('messages')">留言</button>
-                        <button class="content-tab" onclick="switchTab('articles')">随笔</button>
+                        <button class="content-tab active" onclick="switchTab('messages', event)">留言</button>
+                        <button class="content-tab" onclick="switchTab('articles', event)">随笔</button>
                     </div>
                     
                     <div class="content-panel active" id="messages-panel">
@@ -1422,7 +1422,7 @@
             }
         }
 
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             // 隐藏所有面板
             document.querySelectorAll('.content-panel').forEach(panel => {
                 panel.classList.remove('active');
@@ -1437,7 +1437,9 @@
             document.getElementById(tabName + '-panel').classList.add('active');
             
             // 激活选中的标签
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
             
             // 如果切换到文章标签，加载文章
             if (tabName === 'articles') {
