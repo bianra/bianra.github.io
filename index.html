@@ -1297,13 +1297,16 @@
     <script>
         const API_BASE_URL = 'https://bianra-backend.onrender.com/api';
         
-        // 固定封面图片
+        // 固定封面图片 - 优化加载
         function setFixedCoverImage() {
             const coverImage = document.querySelector('.cover-image');
-            coverImage.src = 'static/images/cover.jpg';
+            // 使用压缩后的图片URL
+            coverImage.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80';
+            // 预加载图片
+            coverImage.loading = 'lazy';
             // 设置备用图片
             coverImage.onerror = function() {
-                this.src = 'https://picsum.photos/1920/1080?nature';
+                this.src = 'https://picsum.photos/1920/1080?nature&q=80';
             };
         }
 
