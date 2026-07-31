@@ -1,0 +1,48 @@
+# ===== 依赖 =====
+node_modules/
+.pnp
+.pnp.js
+
+# ===== 构建产物 =====
+dist/
+dist-ssr/
+*.local
+
+# ===== 环境变量（保留 .env.example）=====
+.env
+.env.*
+!.env.example
+
+# ===== 数据库 =====
+# SQLite 本地文件（开发期）
+*.db
+*.db-journal
+# Prisma 生成产物（按需提交 migrations，生成 client 不提交）
+site/backend/node_modules/.prisma/
+
+# ===== 上传文件（运行时生成）=====
+site/backend/static/uploads/
+!site/backend/static/uploads/.gitkeep
+
+# ===== 日志 =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== 编辑器 / 系统 =====
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ===== 缓存 =====
+.cache/
+.vite/
+.eslintcache
