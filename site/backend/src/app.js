@@ -31,6 +31,9 @@ export function createApp() {
   // cookie & 会话
   // 开发: MemoryStore (单管理员本地够用)
   // 生产: 切换 connect-pg-simple 持久化 (部署阶段配置)
+  if (config.isProd) {
+    console.warn('⚠️  生产环境使用 MemoryStore, session 重启即丢失; 部署前请切换 connect-pg-simple 持久化')
+  }
   app.use(cookieParser())
   app.use(session({
     name: 'bianra.sid',
@@ -56,7 +59,8 @@ export function createApp() {
     try {
       await prisma.$queryRaw`SELECT 1`
       res.json({ status: 'ok', db: 'connected' })
-    } catch {
+    } catch (e) {
+      console.error('健康检查数据库查询失败:', e)
       res.status(503).json({ status: 'degraded', db: 'disconnected' })
     }
   })

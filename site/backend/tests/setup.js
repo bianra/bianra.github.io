@@ -1,15 +1,25 @@
 // 测试公共助手: 确保 test.db schema 就绪 + 清表 + 构造测试数据
 import { execSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { prisma } from '../src/db.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// backend 根目录 (tests/ 的上一级), prisma 命令需在此目录执行以找到 schema.prisma
+const backendDir = path.resolve(__dirname, '..')
 
 let schemaReady = false
 
 // 同步 schema 到 test.db (幂等; 仅在本文件首次执行)
-// process.env.DATABASE_URL 由 vitest environmentVariables 注入为 test.db
+// process.env.DATABASE_URL 由 tests/env.js 注入为 test.db
+// --accept-data-loss 仅作用于一次性 test.db, 安全
 export async function ensureSchema() {
   if (schemaReady) return
-  execSync('npx prisma db push --skip-generate --accept-data-loss', {
+  // Windows 下 npx.ps1 可能被执行策略阻止, 优先用 npx.cmd
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+  execSync(`${npx} prisma db push --skip-generate --accept-data-loss`, {
     stdio: 'pipe',
+    cwd: backendDir,
   })
   schemaReady = true
 }

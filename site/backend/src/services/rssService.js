@@ -37,11 +37,12 @@ export async function buildRssXml() {
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>bianra 小屋</title>
     <link>${escapeXml(config.siteUrl)}</link>
     <description>bianra 的个人文章</description>
+    <atom:link href="${escapeXml(config.siteUrl)}/api/feed.xml" rel="self" type="application/rss+xml"/>
     <language>zh-cn</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 ${items}

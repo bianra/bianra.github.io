@@ -62,6 +62,15 @@ describe('公开 API', () => {
       const res = await request(app).get('/api/articles?limit=9999')
       expect(res.status).toBe(200)
     })
+
+    it('page 超出总页数时返回空列表', async () => {
+      await createArticle({ title: '唯一' })
+      const res = await request(app).get('/api/articles?page=999')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(0)
+      expect(res.body.total).toBe(1)
+      expect(res.body.pages).toBe(1)
+    })
   })
 
   describe('GET /api/articles/:id', () => {
@@ -91,7 +100,7 @@ describe('公开 API', () => {
       const res = await request(app).get('/api/feed.xml')
       expect(res.status).toBe(200)
       expect(res.headers['content-type']).toMatch(/xml/)
-      expect(res.text).toContain('<rss version="2.0">')
+      expect(res.text).toContain('<rss version="2.0"')
       expect(res.text).toContain('<channel>')
       expect(res.text).toContain('RSS 测试')
       expect(res.text).toContain('/post/')
