@@ -20,8 +20,8 @@ dist-ssr/
 # Prisma 生成产物（按需提交 migrations，生成 client 不提交）
 site/backend/node_modules/.prisma/
 
-# ===== 上传文件（运行时生成）=====
-site/backend/static/uploads/
+# ===== 上传文件（运行时生成,仅保留目录占位）=====
+site/backend/static/uploads/*
 !site/backend/static/uploads/.gitkeep
 
 # ===== 日志 =====
