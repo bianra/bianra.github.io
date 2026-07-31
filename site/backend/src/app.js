@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { config } from './config.js'
 import { prisma } from './db.js'
 import { publicRouter } from './routes/public.js'
+import { adminRouter } from './routes/admin.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -68,6 +69,9 @@ export function createApp() {
   // 公开 API
   app.use('/api', publicRouter)
 
+  // 后台 API (login 无需鉴权, 其余经 requireAdmin 保护)
+  app.use('/admin/api', adminRouter)
+
   // 静态托管 (uploads/* 与 robots.txt 等)
   app.use(express.static(path.join(__dirname, '..', 'static')))
 
@@ -79,6 +83,10 @@ export function createApp() {
   // 错误处理 (生产环境隐藏堆栈)
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    // multer 上传错误 (文件超限等)
+    if (err?.code?.startsWith?.('LIMIT_')) {
+      return res.status(400).json({ error: '文件大小超过 5MB 限制' })
+    }
     console.error(err)
     res.status(err.status || 500).json({
       error: config.isProd ? '服务器内部错误' : err.message,

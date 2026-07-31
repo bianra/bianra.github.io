@@ -20,3 +20,18 @@ export async function getProfile() {
     social,
   }
 }
+
+// 后台: 更新 profile 单例; social 数组序列化为 JSON 字符串
+export async function updateProfile(data) {
+  const update = {}
+  if (data.name !== undefined) update.name = String(data.name).slice(0, 100)
+  if (data.bio !== undefined) update.bio = String(data.bio)
+  if (data.announcement !== undefined) update.announcement = String(data.announcement).slice(0, 200)
+  if (data.avatarUrl !== undefined) update.avatarUrl = String(data.avatarUrl)
+  if (data.social !== undefined) {
+    // 过滤并限制最多 5 个社交链接
+    const social = Array.isArray(data.social) ? data.social.slice(0, 5) : []
+    update.social = JSON.stringify(social)
+  }
+  await prisma.profile.update({ where: { id: 1 }, data: update })
+}

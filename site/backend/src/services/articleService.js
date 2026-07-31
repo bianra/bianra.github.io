@@ -48,3 +48,81 @@ export async function listAllForArchive(limit = 100) {
     take: Math.min(500, Math.max(1, Number(limit) || 100)),
   })
 }
+
+// ===== 后台 API 用 =====
+
+// 后台列表 (标题模糊搜索 + 分页, 不含 content)
+export async function listArticlesAdmin(query = {}) {
+  const { page, limit } = parsePaging(query)
+  const where = query.q ? { title: { contains: String(query.q) } } : {}
+  const [items, total] = await Promise.all([
+    prisma.article.findMany({
+      where,
+      select: { id: true, title: true, coverUrl: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.article.count({ where }),
+  ])
+  return { items, total, page, pages: Math.ceil(total / limit) || 0 }
+}
+
+// 新建文章
+export async function createArticle(data) {
+  return prisma.article.create({
+    data: {
+      title: data.title,
+      summary: data.summary || '',
+      content: data.content || '',
+      coverUrl: data.coverUrl || '',
+    },
+  })
+}
+
+// 更新文章 (仅更新提供的字段)
+export async function updateArticle(id, data) {
+  const n = Number(id)
+  if (!Number.isInteger(n) || n < 1) return null
+  const update = {}
+  if (data.title !== undefined) update.title = data.title
+  if (data.summary !== undefined) update.summary = data.summary
+  if (data.content !== undefined) update.content = data.content
+  if (data.coverUrl !== undefined) update.coverUrl = data.coverUrl
+  return prisma.article.update({ where: { id: n }, data: update })
+}
+
+// 删除单篇 (不存在返回 false, 不抛错)
+export async function deleteArticle(id) {
+  const n = Number(id)
+  if (!Number.isInteger(n) || n < 1) return false
+  try {
+    await prisma.article.delete({ where: { id: n } })
+    return true
+  } catch (e) {
+    if (e.code === 'P2025') return false // 记录不存在
+    throw e
+  }
+}
+
+// 批量删除, 返回删除数
+export async function deleteArticles(ids) {
+  const validIds = ids.map(Number).filter((n) => Number.isInteger(n) && n > 0)
+  const result = await prisma.article.deleteMany({
+    where: { id: { in: validIds } },
+  })
+  return result.count
+}
+
+// 仪表盘统计: 文章总数 + 最近 5 篇 (按更新时间倒序)
+export async function getStats() {
+  const [articleCount, recent] = await Promise.all([
+    prisma.article.count(),
+    prisma.article.findMany({
+      select: { id: true, title: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    }),
+  ])
+  return { articleCount, recent }
+}

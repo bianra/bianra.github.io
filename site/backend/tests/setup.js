@@ -2,6 +2,7 @@
 import { execSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import bcrypt from 'bcryptjs'
 import { prisma } from '../src/db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -53,4 +54,10 @@ export async function createArticle(overrides = {}) {
       ...overrides,
     },
   })
+}
+
+// 构造测试管理员 (默认用户名 admin / 密码 test123456)
+export async function createAdmin(username = 'admin', password = 'test123456') {
+  const passwordHash = await bcrypt.hash(password, 10)
+  return prisma.admin.create({ data: { username, passwordHash } })
 }
