@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# 本地 npm 镜像加速 (仅开发, 不提交)
+.npmrc
+
 # ===== 构建产物 =====
 dist/
 dist-ssr/

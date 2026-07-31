@@ -1,0 +1,47 @@
+// bianra 小屋 v2 数据模型
+//
+// 开发环境: SQLite (provider = "sqlite", DATABASE_URL=file:./dev.db)
+// 生产环境: 切换为 postgresql, 使用 Neon 连接串, 并执行 prisma migrate deploy
+//
+// 说明: 字段统一用 String (跨 provider 兼容);
+// 长度限制 (标题 ≤100, 摘要 ≤200, 正文 ≤100KB) 在应用层校验。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 管理员账户 (单管理员)
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+/// 个人资料 (单例, id 恒为 1)
+model Profile {
+  id           Int    @id @default(1) // 单例, 恒为 1
+  name         String @default("bianra")
+  bio          String @default("") // 关于页长文
+  announcement String @default("") // 公告栏 (主页侧栏显示最近 1 条)
+  avatarUrl    String @default("") // 头像 URL
+  social       String @default("[]") // JSON 数组 [{label, url}]
+}
+
+/// 文章
+model Article {
+  id        Int      @id @default(autoincrement())
+  title     String // ≤100 字 (应用层校验)
+  summary   String   @default("") // 摘要 ≤200 字
+  content   String // Markdown 正文
+  coverUrl  String   @default("") // 封面图 URL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
