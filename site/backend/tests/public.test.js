@@ -1,0 +1,116 @@
+// 公开 API 集成测试 (supertest + vitest)
+import { describe, it, expect, beforeEach } from 'vitest'
+import request from 'supertest'
+
+import { createApp } from '../src/app.js'
+import { resetDb, createArticle } from './setup.js'
+
+const app = createApp()
+
+describe('公开 API', () => {
+  beforeEach(async () => {
+    await resetDb()
+  })
+
+  describe('GET /health', () => {
+    it('返回 ok 且 db 已连接', async () => {
+      const res = await request(app).get('/health')
+      expect(res.status).toBe(200)
+      expect(res.body.status).toBe('ok')
+      expect(res.body.db).toBe('connected')
+    })
+  })
+
+  describe('GET /api/profile', () => {
+    it('返回 profile, social 为数组', async () => {
+      const res = await request(app).get('/api/profile')
+      expect(res.status).toBe(200)
+      expect(res.body.name).toBe('bianra')
+      expect(res.body.bio).toBe('关于我')
+      expect(res.body.announcement).toBe('欢迎')
+      expect(Array.isArray(res.body.social)).toBe(true)
+      expect(res.body.social[0]).toMatchObject({
+        label: 'GitHub',
+        url: 'https://github.com/xxx',
+      })
+    })
+  })
+
+  describe('GET /api/articles', () => {
+    it('分页返回列表, 不含 content', async () => {
+      await createArticle({ title: 'A' })
+      await createArticle({ title: 'B' })
+      const res = await request(app).get('/api/articles?page=1&limit=6')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(2)
+      expect(res.body.items[0]).not.toHaveProperty('content')
+      expect(res.body.total).toBe(2)
+      expect(res.body.page).toBe(1)
+      expect(res.body.pages).toBe(1)
+    })
+
+    it('按创建时间倒序', async () => {
+      await createArticle({ title: '旧' })
+      await new Promise((r) => setTimeout(r, 60))
+      await createArticle({ title: '新' })
+      const res = await request(app).get('/api/articles')
+      expect(res.body.items[0].title).toBe('新')
+      expect(res.body.items[1].title).toBe('旧')
+    })
+
+    it('limit 上限裁剪到 100', async () => {
+      const res = await request(app).get('/api/articles?limit=9999')
+      expect(res.status).toBe(200)
+    })
+  })
+
+  describe('GET /api/articles/:id', () => {
+    it('返回详情, 含 content', async () => {
+      const a = await createArticle({ title: '详情', content: '# Hi' })
+      const res = await request(app).get(`/api/articles/${a.id}`)
+      expect(res.status).toBe(200)
+      expect(res.body.title).toBe('详情')
+      expect(res.body.content).toBe('# Hi')
+    })
+
+    it('不存在返回 404', async () => {
+      const res = await request(app).get('/api/articles/9999')
+      expect(res.status).toBe(404)
+      expect(res.body.error).toBe('文章不存在')
+    })
+
+    it('非法 id 返回 404', async () => {
+      const res = await request(app).get('/api/articles/abc')
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe('GET /api/feed.xml', () => {
+    it('返回 RSS 2.0 XML, 含文章', async () => {
+      await createArticle({ title: 'RSS 测试', summary: '提要' })
+      const res = await request(app).get('/api/feed.xml')
+      expect(res.status).toBe(200)
+      expect(res.headers['content-type']).toMatch(/xml/)
+      expect(res.text).toContain('<rss version="2.0">')
+      expect(res.text).toContain('<channel>')
+      expect(res.text).toContain('RSS 测试')
+      expect(res.text).toContain('/post/')
+    })
+
+    it('无文章时返回空 channel (无 item)', async () => {
+      const res = await request(app).get('/api/feed.xml')
+      expect(res.status).toBe(200)
+      expect(res.text).toContain('<channel>')
+      expect(res.text).not.toContain('<item>')
+    })
+  })
+
+  describe('GET /robots.txt', () => {
+    it('返回 robots, 禁止 /admin/', async () => {
+      const res = await request(app).get('/robots.txt')
+      expect(res.status).toBe(200)
+      expect(res.text).toContain('Disallow: /admin/')
+      expect(res.text).toContain('Sitemap: https://bianra.com/sitemap.xml')
+    })
+  })
+})

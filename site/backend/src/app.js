@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 
 import { config } from './config.js'
 import { prisma } from './db.js'
+import { publicRouter } from './routes/public.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -60,7 +61,10 @@ export function createApp() {
     }
   })
 
-  // 静态托管 (uploads/* 与后续 robots.txt 等)
+  // 公开 API
+  app.use('/api', publicRouter)
+
+  // 静态托管 (uploads/* 与 robots.txt 等)
   app.use(express.static(path.join(__dirname, '..', 'static')))
 
   // 404
