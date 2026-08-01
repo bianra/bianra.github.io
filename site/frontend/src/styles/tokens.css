@@ -2,18 +2,11 @@
 /* 所有颜色/间距/圆角统一通过 CSS 变量引用, 便于主题切换 */
 
 /* ===== 艺术字体导入 (手写花体 bianra 大字) ===== */
-/* 本地托管 Dancing Script (woff2), 不依赖 Google Fonts CDN, 加载快不卡顿 */
+/* 本地托管 Pacifico (woff2), 圆润手写风, 不依赖 Google Fonts CDN, 加载快不卡顿 */
 /* 回退: Segoe Script / Brush Script MT / Comic Sans MS (系统自带, Windows) */
 @font-face {
-  font-family: 'Dancing Script Local';
-  src: url('../assets/fonts/dancing-script-700.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Dancing Script Local';
-  src: url('../assets/fonts/dancing-script.woff2') format('woff2');
+  font-family: 'Pacifico Local';
+  src: url('../assets/fonts/pacifico.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -44,11 +37,11 @@
   /* 内容区域半透明叠层 (让文字可读, 同时透出背景图) */
   --bg-overlay: rgba(12, 7, 28, 0.55);
 
-  /* 手写字体 (Hero 大字 "bianra"): 笔画粗 + 结构大气, 避免糊 */
+  /* 手写字体 (Hero 大字 "bianra"): 圆润复古手写风 (Pacifico) */
   /* 方案: 本地字体文件优先, 回退系统手写字体 (不依赖外部 CDN, 加载快不卡) */
-  --font-art: 'Dancing Script Local', 'Segoe Script', 'Brush Script MT', 'Comic Sans MS', 'Mistral', cursive;
-  /* 艺术字字重: Bold, 笔画清晰锐利不糊 */
-  --font-art-weight: 700;
+  --font-art: 'Pacifico Local', 'Segoe Script', 'Brush Script MT', 'Comic Sans MS', 'Mistral', cursive;
+  /* 艺术字字重: 常规 (Pacifico 仅 400 字重) */
+  --font-art-weight: 400;
 
   /* 滚动动画变量 (由 JS 更新) */
   --hero-opacity: 1;
