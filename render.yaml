@@ -6,6 +6,7 @@ services:
   - type: web
     name: bianra-site
     runtime: node
+    plan: free # 免费实例 (休眠唤醒, 750h/月)
     rootDir: site/backend
     buildCommand: npm ci && npx prisma migrate deploy && npx prisma db seed
     startCommand: npm start
