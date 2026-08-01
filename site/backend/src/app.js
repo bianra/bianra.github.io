@@ -77,16 +77,20 @@ export function createApp() {
   app.use(express.static(path.join(__dirname, '..', 'static')))
 
   // ===== 方案 X: 生产同源部署, Express 托管前端构建产物 =====
-  // 生产环境 (NODE_ENV=production) 托管 frontend/dist; 开发仍用 Vite dev server (5173)
+  // 生产环境 (NODE_ENV=production) 托管前端 dist;
+  // Render 构建会把 frontend/dist 复制到 static/dist (rootDir 内, 运行时保留)
+  // 路径优先级: 1) static/dist (Render 生产)  2) frontend/dist (本地生产模拟)
+  const staticDist = path.join(__dirname, '..', 'static', 'dist')
   const frontendDist = path.resolve(__dirname, '..', '..', 'frontend', 'dist')
-  if (config.isProd && existsSync(frontendDist)) {
-    app.use(express.static(frontendDist))
+  const serveDist = config.isProd && (existsSync(staticDist) ? staticDist : existsSync(frontendDist) ? frontendDist : null)
+  if (serveDist) {
+    app.use(express.static(serveDist))
     // SPA history 路由 fallback: 非 /api /admin/api /uploads /health 的 GET 都回 index.html
     app.get(/^(?!\/(api|admin\/api|uploads|health|robots\.txt)).*/, (req, res, next) => {
       if (req.method !== 'GET') return next()
-      res.sendFile(path.join(frontendDist, 'index.html'))
+      res.sendFile(path.join(serveDist, 'index.html'))
     })
-    console.log('🌐 生产模式: 托管前端 dist 于', frontendDist)
+    console.log('🌐 生产模式: 托管前端 dist 于', serveDist)
   }
 
   // 404
