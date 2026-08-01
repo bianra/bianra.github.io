@@ -1,17 +1,15 @@
-// 文件服务: 魔数校验 (file-type) + 像素尺寸校验 (image-size) + uuid 落盘到 uploads/yyyyMM/
+// 文件服务: 魔数校验 (file-type) + 像素尺寸校验 (image-size) + 存数据库
+// 存数据库原因: Render 免费实例磁盘每次部署重置, 存 DB 图片不丢
 import { fileTypeFromBuffer } from 'file-type'
 import imageSize from 'image-size'
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
-import { randomUUID } from 'node:crypto'
 
-import { config } from '../config.js'
+import { prisma } from '../db.js'
 
 const ALLOWED = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif'])
 // 像素尺寸上限: 8000px (防超大图解压拖垮前端; 全站背景图通常较大, 需留足空间)
 const MAX_DIMENSION = 8000
 
-// 校验并保存图片, 返回可访问的 URL 路径; 不合法抛 400
+// 校验并保存图片到数据库, 返回可访问的 URL 路径; 不合法抛 400
 export async function saveImage(buffer) {
   // 魔数校验 (识别真实类型, 防伪造扩展名)
   const type = await fileTypeFromBuffer(buffer)
@@ -37,12 +35,18 @@ export async function saveImage(buffer) {
     throw err
   }
 
-  // 按年月分目录: uploads/yyyyMM/uuid.ext
-  const ym = new Date().toISOString().slice(0, 7).replace('-', '')
-  const dir = path.join(config.uploadsDir, ym)
-  await fs.mkdir(dir, { recursive: true })
-  const filename = `${randomUUID().slice(0, 16)}.${type.ext}`
-  await fs.writeFile(path.join(dir, filename), buffer)
+  // 存入数据库
+  const mimeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' }
+  const upload = await prisma.upload.create({
+    data: { mime: mimeMap[type.ext] || 'application/octet-stream', data: buffer },
+  })
 
-  return `/uploads/${ym}/${filename}`
+  return `/uploads/${upload.id}`
+}
+
+// 按 id 读取文件 (不存在返回 null)
+export async function getUpload(id) {
+  const n = Number(id)
+  if (!Number.isInteger(n) || n < 1) return null
+  return prisma.upload.findUnique({ where: { id: n } })
 }

@@ -48,3 +48,11 @@ model Article {
   @@index([createdAt])
   @@index([category])
 }
+
+/// 上传文件 (存数据库, 避免 Render 免费实例磁盘重置丢图)
+model Upload {
+  id        Int      @id @default(autoincrement())
+  mime      String // 如 image/png
+  data      Bytes // 文件二进制
+  createdAt DateTime @default(now())
+}

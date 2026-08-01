@@ -225,7 +225,16 @@ describe('后台 API', () => {
       const agent = await loginAgent()
       const res = await agent.post('/admin/api/upload').attach('file', PNG_BUFFER, 'test.png')
       expect(res.status).toBe(201)
-      expect(res.body.url).toMatch(/^\/uploads\/\d{6}\/[a-f0-9-]+\.png$/)
+      expect(res.body.url).toMatch(/^\/uploads\/\d+$/)
+    })
+
+    it('上传后可经 /uploads/:id 读取', async () => {
+      const agent = await loginAgent()
+      const res = await agent.post('/admin/api/upload').attach('file', PNG_BUFFER, 'test.png')
+      expect(res.status).toBe(201)
+      const getRes = await request(app).get(res.body.url)
+      expect(getRes.status).toBe(200)
+      expect(getRes.headers['content-type']).toContain('image/png')
     })
 
     it('SVG 被拒 (魔数不匹配)', async () => {

@@ -15,6 +15,7 @@ import { config } from './config.js'
 import { prisma } from './db.js'
 import { publicRouter } from './routes/public.js'
 import { adminRouter } from './routes/admin.js'
+import { getUpload } from './services/fileService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -73,7 +74,21 @@ export function createApp() {
   // 后台 API (login 无需鉴权, 其余经 requireAdmin 保护)
   app.use('/admin/api', adminRouter)
 
-  // 静态托管 (uploads/* 与 robots.txt 等)
+  // ===== 上传文件读取 (数据库存储, /uploads/:id) =====
+  // 放在 express.static 之前, 拦截 /uploads/:id 从数据库读图片
+  app.get('/uploads/:id', async (req, res, next) => {
+    try {
+      const upload = await getUpload(req.params.id)
+      if (!upload) return res.status(404).json({ error: '文件不存在' })
+      res.set('Content-Type', upload.mime)
+      res.set('Cache-Control', 'public, max-age=31536000, immutable')
+      res.send(upload.data)
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  // 静态托管 (robots.txt 等; 上传文件已改存数据库, 不再依赖磁盘目录)
   app.use(express.static(path.join(__dirname, '..', 'static')))
 
   // ===== 方案 X: 生产同源部署, Express 托管前端构建产物 =====
