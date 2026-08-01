@@ -7,9 +7,13 @@ const LIST_SELECT = {
   title: true,
   summary: true,
   coverUrl: true,
+  category: true,
   createdAt: true,
   updatedAt: true,
 }
+
+// 合法分类
+const VALID_CATS = ['diary', 'study', 'code']
 
 // 解析分页参数, 做边界裁剪
 function parsePaging({ page, limit } = {}) {
@@ -18,17 +22,23 @@ function parsePaging({ page, limit } = {}) {
   return { page: p, limit: l }
 }
 
-// GET /api/articles?page=&limit=
+// GET /api/articles?page=&limit=&cat=&q=
 export async function listArticles(query = {}) {
   const { page, limit } = parsePaging(query)
+  const cat = VALID_CATS.includes(String(query.cat)) ? String(query.cat) : null
+  const q = String(query.q || '').trim()
+  const where = {}
+  if (cat) where.category = cat
+  if (q) where.title = { contains: q }
   const [items, total] = await Promise.all([
     prisma.article.findMany({
+      where,
       select: LIST_SELECT,
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.article.count(),
+    prisma.article.count({ where }),
   ])
   return { items, total, page, pages: Math.ceil(total / limit) || 0 }
 }
@@ -38,6 +48,19 @@ export async function getArticleById(id) {
   const n = Number(id)
   if (!Number.isInteger(n) || n < 1) return null
   return prisma.article.findUnique({ where: { id: n } })
+}
+
+// 各分类文章数 (主页侧栏统计用): { diary, study, code }
+export async function getCategoryCounts() {
+  const groups = await prisma.article.groupBy({
+    by: ['category'],
+    _count: { _all: true },
+  })
+  const counts = { diary: 0, study: 0, code: 0 }
+  for (const g of groups) {
+    counts[g.category] = g._count._all
+  }
+  return counts
 }
 
 // 归档用: 取较多条目 (按时间倒序, 不含 content)
@@ -76,6 +99,7 @@ export async function createArticle(data) {
       summary: data.summary || '',
       content: data.content || '',
       coverUrl: data.coverUrl || '',
+      category: VALID_CATS.includes(data.category) ? data.category : 'diary',
     },
   })
 }
@@ -89,6 +113,7 @@ export async function updateArticle(id, data) {
   if (data.summary !== undefined) update.summary = data.summary
   if (data.content !== undefined) update.content = data.content
   if (data.coverUrl !== undefined) update.coverUrl = data.coverUrl
+  if (data.category !== undefined && VALID_CATS.includes(data.category)) update.category = data.category
   return prisma.article.update({ where: { id: n }, data: update })
 }
 

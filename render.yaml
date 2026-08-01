@@ -1,0 +1,25 @@
+# Render Blueprint 部署配置 (方案 X: 单服务同源部署)
+# 前端构建产物 frontend/dist 由后端 Express 托管 (见 src/app.js 生产分支)
+# 使用: Render Dashboard → New → Blueprint → 选择本仓库
+
+services:
+  - type: web
+    name: bianra-site
+    runtime: node
+    rootDir: site/backend
+    buildCommand: npm ci && npx prisma migrate deploy && npx prisma db seed
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # 在 Render 控制台手动填入 Neon 连接串
+      - key: SESSION_SECRET
+        sync: false # 手动填入随机长串
+      - key: CORS_ORIGIN
+        value: https://bianra.com
+      - key: SITE_URL
+        value: https://bianra.com
+      - key: ADMIN_PASSWORD
+        sync: false # 可选: 指定初始管理员密码

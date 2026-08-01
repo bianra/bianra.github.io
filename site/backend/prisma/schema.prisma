@@ -1,9 +1,9 @@
 // bianra 小屋 v2 数据模型
 //
-// 开发环境: SQLite (provider = "sqlite", DATABASE_URL=file:./dev.db)
-// 生产环境: 切换为 postgresql, 使用 Neon 连接串, 并执行 prisma migrate deploy
+// 统一 PostgreSQL (Neon): 本地开发与生产一致, 消除 SQLite/PG 双套迁移问题
+// DATABASE_URL 指向 Neon 连接串; 测试库独立 schema (见 tests/env.js)
 //
-// 说明: 字段统一用 String (跨 provider 兼容);
+// 说明: 字段统一用 String;
 // 长度限制 (标题 ≤100, 摘要 ≤200, 正文 ≤100KB) 在应用层校验。
 
 generator client {
@@ -11,7 +11,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -30,6 +30,7 @@ model Profile {
   bio          String @default("") // 关于页长文
   announcement String @default("") // 公告栏 (主页侧栏显示最近 1 条)
   avatarUrl    String @default("") // 头像 URL
+  bgUrl        String @default("") // 全站背景图 URL (空 = 默认紫黑渐变)
   social       String @default("[]") // JSON 数组 [{label, url}]
 }
 
@@ -40,8 +41,10 @@ model Article {
   summary   String   @default("") // 摘要 ≤200 字
   content   String // Markdown 正文
   coverUrl  String   @default("") // 封面图 URL
+  category  String   @default("diary") // 分类: diary 日记 / study 学习 / code 代码
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([category])
 }

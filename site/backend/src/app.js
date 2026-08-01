@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser'
 import session from 'express-session'
 import morgan from 'morgan'
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { config } from './config.js'
@@ -74,6 +75,19 @@ export function createApp() {
 
   // 静态托管 (uploads/* 与 robots.txt 等)
   app.use(express.static(path.join(__dirname, '..', 'static')))
+
+  // ===== 方案 X: 生产同源部署, Express 托管前端构建产物 =====
+  // 生产环境 (NODE_ENV=production) 托管 frontend/dist; 开发仍用 Vite dev server (5173)
+  const frontendDist = path.resolve(__dirname, '..', '..', 'frontend', 'dist')
+  if (config.isProd && existsSync(frontendDist)) {
+    app.use(express.static(frontendDist))
+    // SPA history 路由 fallback: 非 /api /admin/api /uploads /health 的 GET 都回 index.html
+    app.get(/^(?!\/(api|admin\/api|uploads|health|robots\.txt)).*/, (req, res, next) => {
+      if (req.method !== 'GET') return next()
+      res.sendFile(path.join(frontendDist, 'index.html'))
+    })
+    console.log('🌐 生产模式: 托管前端 dist 于', frontendDist)
+  }
 
   // 404
   app.use((req, res) => {

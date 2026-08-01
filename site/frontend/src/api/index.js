@@ -81,6 +81,7 @@ export const publicApi = {
   },
   getArticle: (id) => request(`/api/articles/${id}`),
   getFeed: () => request('/api/feed.xml'),
+  getCategoryCounts: () => request('/api/category-counts'),
   health: () => request('/health'),
 }
 

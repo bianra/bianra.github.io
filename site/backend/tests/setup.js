@@ -11,9 +11,9 @@ const backendDir = path.resolve(__dirname, '..')
 
 let schemaReady = false
 
-// 同步 schema 到 test.db (幂等; 仅在本文件首次执行)
-// process.env.DATABASE_URL 由 tests/env.js 注入为 test.db
-// --accept-data-loss 仅作用于一次性 test.db, 安全
+// 同步 schema 到测试 schema (幂等; 仅在本文件首次执行)
+// process.env.DATABASE_URL 由 tests/env.js 注入为 ?schema=test
+// --accept-data-loss 仅作用于一次性测试 schema, 安全
 export async function ensureSchema() {
   if (schemaReady) return
   // Windows 下 npx.ps1 可能被执行策略阻止, 优先用 npx.cmd
@@ -21,6 +21,7 @@ export async function ensureSchema() {
   execSync(`${npx} prisma db push --skip-generate --accept-data-loss`, {
     stdio: 'pipe',
     cwd: backendDir,
+    timeout: 120000, // 跨网络首次建表可能较慢
   })
   schemaReady = true
 }
@@ -31,8 +32,11 @@ export async function resetDb() {
   await prisma.article.deleteMany()
   await prisma.profile.deleteMany()
   await prisma.admin.deleteMany()
-  await prisma.profile.create({
-    data: {
+  // 用 upsert 替代 create: 避免 deleteMany 与序列残留导致的 unique 冲突
+  await prisma.profile.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
       id: 1,
       name: 'bianra',
       bio: '关于我',

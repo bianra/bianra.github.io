@@ -2,7 +2,7 @@
 import { Router } from 'express'
 
 import { getProfile } from '../services/profileService.js'
-import { listArticles, getArticleById } from '../services/articleService.js'
+import { listArticles, getArticleById, getCategoryCounts } from '../services/articleService.js'
 import { buildRssXml } from '../services/rssService.js'
 
 export const publicRouter = Router()
@@ -13,6 +13,15 @@ publicRouter.get('/profile', async (req, res, next) => {
     const profile = await getProfile()
     if (!profile) return res.status(404).json({ error: '资料不存在' })
     res.json(profile)
+  } catch (e) {
+    next(e)
+  }
+})
+
+// GET /api/category-counts (各分类文章数)
+publicRouter.get('/category-counts', async (req, res, next) => {
+  try {
+    res.json(await getCategoryCounts())
   } catch (e) {
     next(e)
   }

@@ -1,12 +1,47 @@
 /* ===== bianra 小屋 v2 — 设计令牌 ===== */
 /* 所有颜色/间距/圆角统一通过 CSS 变量引用, 便于主题切换 */
 
+/* ===== 艺术字体导入 (手写花体 bianra 大字) ===== */
+/* Dancing Script 700 Bold (主, 大气清晰) / Style Script (优雅连笔) / Allura (经典手写) / Mistral (Windows 系统兜底) */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Style+Script&family=Allura&display=swap');
+
 :root {
   /* 主色渐变 */
   --accent:   #7c6cf0;   /* 主紫 */
   --accent-2: #4aa8ff;   /* 副蓝 */
-  --mint:     #34d399;   /* 点缀薄荷绿 */
   --accent-rgb: 124, 108, 240;  /* 供低透明度使用 */
+
+  /* 粉色点缀 (logo "ra" / 数字) */
+  --pink:     #ff6b9d;
+  --pink-2:   #ffa8c5;
+  --pink-rgb: 255, 107, 157;
+
+  /* Hero 紫黑渐变（作为 --bg-image 默认 fallback, 后续可自由更换为 url() */
+  --hero-1:   #2a1454;   /* 左上亮紫 */
+  --hero-2:   #12072b;   /* 右中暗紫 */
+  --hero-3:   #0a0516;   /* 底部深黑 */
+
+  /* ====== 整页背景图 (自由更换: 把 url() 填到 var(--bg-image) 即可) ====== */
+  /* 例: --bg-image: url('https://xxx/bg.jpg'); 当前默认: 紫黑径向渐变 fallback */
+  --bg-image:
+    radial-gradient(ellipse 70% 50% at 20% 15%, #3a1e72 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(150, 50, 200, 0.45) 0%, transparent 60%),
+    linear-gradient(160deg, var(--hero-1) 0%, var(--hero-2) 45%, var(--hero-3) 100%);
+  /* 内容区域半透明叠层 (让文字可读, 同时透出背景图) */
+  --bg-overlay: rgba(12, 7, 28, 0.55);
+
+  /* 手写字体 (Hero 大字 "bianra"): 笔画粗 + 结构大气, 避免糊 */
+  --font-art: 'Dancing Script', 'Style Script', 'Allura', 'Mistral', cursive;
+  /* 艺术字字重: Bold, 笔画清晰锐利不糊 */
+  --font-art-weight: 700;
+
+  /* 滚动动画变量 (由 JS 更新) */
+  --hero-opacity: 1;
+  --hero-translate: 0px;
+  /* Nav 默认显示(1): 非首页常驻; 首页 HomeView onMounted 会主动设 0 (下滑才显) */
+  --nav-opacity: 1;
+  --nav-translate: 0px;
+  --nav-pointer: auto;  /* 透明时用 none 禁止点击, 防止遮挡 */
 
   /* 中性色 (浅色模式) */
   --ink:      #1f2430;   /* 正文 */
@@ -27,7 +62,6 @@
   --space-md: 24px;
   --space-lg: 32px;
   --space-xl: 48px;
-  --content-max: 720px;
 
   /* 字号 */
   --fs-xs: 12px;
@@ -67,28 +101,54 @@ html {
 body {
   font-family: 'MiSans', 'HarmonyOS Sans', 'LXGW WenKai', 'PingFang SC',
     'Microsoft YaHei', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: var(--ink);
-  background: var(--bg);
+  color: #fff;
+  /* ====== 整页统一背景 (视差固定: 下滑永远不换底色) ====== */
+  background:
+    linear-gradient(0deg, var(--bg-overlay), var(--bg-overlay)),
+    var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background var(--transition), color var(--transition);
 }
+
+/* 深色模式下加深叠层 (浅色模式透明即可看到真实背景图, 文字仍白) */
+html.ks-dark body {
+  background:
+    linear-gradient(0deg, rgba(5,3,16,0.82), rgba(5,3,16,0.72)),
+    var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* ===== 快速更换背景图 =====
+  只需一行 JS 即可切换全站背景 (图片尺寸推荐 ≥1920×1080):
+  document.documentElement.style.setProperty(
+    '--bg-image',
+    "url('https://你的图.jpg')"
+  );
+  还可以配套调叠层透明度:
+  document.documentElement.style.setProperty('--bg-overlay', 'rgba(12,7,28,0.35)');
+*/
 
 /* 标题字体: 优先霞鹜文楷 */
 h1, h2, h3, h4, h5 {
   font-family: 'LXGW WenKai', 'MiSans', 'HarmonyOS Sans', system-ui, sans-serif;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--ink);
+  color: inherit; /* 跟随 body 文字颜色 (默认白) */
 }
 
 a {
-  color: var(--accent);
+  color: var(--pink-2);
   text-decoration: none;
-  transition: opacity var(--transition);
+  transition: opacity var(--transition), color var(--transition);
 }
-a:hover { opacity: 0.82; }
+a:hover { opacity: 0.85; color: var(--pink); }
 
 button {
   font-family: inherit;
@@ -147,6 +207,64 @@ img {
   color: var(--ink);
 }
 
+/* 危险按钮 (删除类操作) */
+.btn-danger {
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  background: #e74c3c;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.btn-danger:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 危险文本按钮 (列表行内删除) */
+.btn-danger-text {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  color: #e74c3c;
+  background: transparent;
+  transition: background var(--transition);
+}
+.btn-danger-text:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+.btn-danger-text:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 分页按钮 */
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  background: transparent;
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+}
+.page-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+}
+.page-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* 玻璃拟态卡片 (左上角径向光斑) */
 .glass-panel {
   position: relative;
@@ -192,6 +310,147 @@ img {
   to   { opacity: 1; transform: translateY(0); }
 }
 .page-enter { animation: page-fade 240ms ease-out both; }
+
+/* ===== bianra 艺术字 (Hero 中央) ===== */
+.art-bianra {
+  font-family: var(--font-art);
+  font-weight: var(--font-art-weight, 700);
+  color: #fff;
+  /* 清晰锐利的辉光 (不做糊边大光晕): 1px 白色描边轮廓 + 小半径柔和蓝光 + 轻微投影 */
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.7),
+    0 0 8px rgba(220, 200, 255, 0.45),
+    0 2px 2px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  /* 次像素抗锯齿让笔画边缘锐利, 不糊 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动时由 --hero-* 变量驱动的渐隐动画 (纯淡出 + 上移, 不做模糊) */
+.hero-art-wrap {
+  opacity: var(--hero-opacity);
+  transform: translateY(var(--hero-translate));
+  will-change: opacity, transform;
+  /* ❌ 无 transition! JS 每帧 requestAnimationFrame 直写 CSS 变量, 加 transition 会造成"停半"感 (帧值 vs 缓动值打架) */
+}
+
+/* logo "ra" 片段 (黑白统一) */
+.logo-ra {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 粉色小数字 (留言数等) */
+.pink-num {
+  color: var(--pink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 头像粉色光晕环 */
+.avatar-ring {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  padding: 4px;
+  margin: 0 auto;
+}
+.avatar-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.1));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  padding: 2px;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.avatar-ring img,
+.avatar-ring .avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  z-index: 1;
+  position: relative;
+}
+@keyframes ring-rotate { to { transform: rotate(360deg); } }
+
+/* 圆形迷你按钮 (Hero 右上角) */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background var(--transition), transform var(--transition);
+  cursor: pointer;
+  font-size: 16px;
+}
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+.icon-btn.light {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.icon-btn.light:hover {
+  background: #fff;
+}
+
+/* 轻卡片 (Profile/公告/文章): 深色磨砂半透明, 无白边, 无模糊 */
+.light-card {
+  position: relative;
+  /* 深色磨砂卡: 深紫灰半透明, 不透背景图细节, 微微透出 */
+  background: rgba(18, 14, 38, 0.72);
+  color: #fff;
+  /* 覆盖内部 scoped 中引用的 --ink / --ink-2 → 白字 */
+  --ink: #ffffff;
+  --ink-2: rgba(220, 212, 240, 0.82);
+  /* ❌ 无 border / 无白边 / 无 backdrop-filter (按要求舍弃模糊化) */
+  border: none;
+  border-radius: 18px;
+  /* 外阴影做悬浮感, 无 inset 高光白边 */
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  padding: 24px;
+  transition: box-shadow var(--transition), transform var(--transition), background var(--transition);
+}
+.light-card:hover {
+  background: rgba(28, 22, 54, 0.82);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px);
+}
+html.ks-dark .light-card {
+  background: rgba(12, 10, 22, 0.78);
+  color: #e8ecf4;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
 
 /* ===== 响应式断点 ===== */
 /* ≤1024px: 双栏折叠单栏 */

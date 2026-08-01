@@ -5,8 +5,6 @@ import { useAuthStore } from '../stores/auth.js'
 const routes = [
   /* ===== 公开站 ===== */
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { type: 'public' } },
-  { path: '/archive', name: 'archive', component: () => import('../views/ArchiveView.vue'), meta: { type: 'public' } },
-  { path: '/about', name: 'about', component: () => import('../views/AboutView.vue'), meta: { type: 'public' } },
   { path: '/fortune', name: 'fortune', component: () => import('../views/FortuneView.vue'), meta: { type: 'public' } },
   { path: '/post/:id', name: 'post', component: () => import('../views/PostView.vue'), meta: { type: 'public' }, props: true },
 
@@ -33,10 +31,14 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  // 滚动行为: 回到顶部 / 锚点
+  // 滚动行为: 回到顶部 / 锚点 / 首页分类&搜索直接定位内容区
   scrollBehavior(to, _from, saved) {
     if (saved) return saved
     if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    // 首页带分类(cat)或搜索(q)参数: 导航后直接到内容区, 不停在封页
+    if (to.path === '/' && (to.query.cat || to.query.q)) {
+      return { top: window.innerHeight } // 内容区起点 = 一个视口高度
+    }
     return { top: 0 }
   },
 })
@@ -72,9 +74,7 @@ router.afterEach((to) => {
 function buildTitle(to) {
   const map = {
     home: 'bianra 小屋',
-    archive: '归档 · bianra 小屋',
-    about: '关于 · bianra 小屋',
-    fortune: '每日抽卡 · bianra 小屋',
+    fortune: '每日抽签 · bianra 小屋',
     post: '文章 · bianra 小屋',
     'admin-dashboard': '仪表盘 · 后台',
     'admin-articles': '文章管理 · 后台',

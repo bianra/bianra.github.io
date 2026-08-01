@@ -138,6 +138,51 @@ describe('后台 API', () => {
       expect(res.body.title).toBe('新标题')
     })
 
+    it('新建文章带 category 保存', async () => {
+      const agent = await loginAgent()
+      const res = await agent.post('/admin/api/articles').send({
+        title: '学习笔记', category: 'study', content: 'x',
+      })
+      expect(res.status).toBe(201)
+      const detail = await request(app).get(`/api/articles/${res.body.id}`)
+      expect(detail.body.category).toBe('study')
+    })
+
+    it('非法 category 回退 diary', async () => {
+      const agent = await loginAgent()
+      const res = await agent.post('/admin/api/articles').send({
+        title: '怪分类', category: 'hacker', content: 'x',
+      })
+      expect(res.status).toBe(201)
+      const detail = await request(app).get(`/api/articles/${res.body.id}`)
+      expect(detail.body.category).toBe('diary')
+    })
+
+    it('编辑文章可更新 category', async () => {
+      const a = await createArticle({ title: '换分类', category: 'diary' })
+      const agent = await loginAgent()
+      await agent.put(`/admin/api/articles/${a.id}`).send({ title: '换分类', category: 'code' })
+      const detail = await request(app).get(`/api/articles/${a.id}`)
+      expect(detail.body.category).toBe('code')
+      expect(detail.body.title).toBe('换分类')
+    })
+
+    it('编辑标题超 100 字返回 400', async () => {
+      const a = await createArticle({ title: '原始标题' })
+      const agent = await loginAgent()
+      const res = await agent.put(`/admin/api/articles/${a.id}`).send({ title: 'x'.repeat(101) })
+      expect(res.status).toBe(400)
+    })
+
+    it('新建摘要超 200 字返回 400', async () => {
+      const agent = await loginAgent()
+      const res = await agent.post('/admin/api/articles').send({
+        title: '长摘要', summary: 'x'.repeat(201), content: 'y',
+      })
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('摘要不能超过 200 字')
+    })
+
     it('编辑不存在返回 404', async () => {
       const agent = await loginAgent()
       const res = await agent.put('/admin/api/articles/9999').send({ title: 'x' })
@@ -194,6 +239,21 @@ describe('后台 API', () => {
       const res = await agent.post('/admin/api/upload')
       expect(res.status).toBe(400)
     })
+
+    it('超 5MB 文件被拒', async () => {
+      const agent = await loginAgent()
+      const big = Buffer.alloc(5 * 1024 * 1024 + 1, 0x89) // 超限
+      const res = await agent.post('/admin/api/upload').attach('file', big, 'big.bin')
+      expect(res.status).toBe(400)
+    })
+
+    it('伪造扩展名的非图片被拒 (魔数校验)', async () => {
+      const agent = await loginAgent()
+      // 内容不是图片, 但伪装成 .png
+      const fake = Buffer.from('not really a png at all')
+      const res = await agent.post('/admin/api/upload').attach('file', fake, 'fake.png')
+      expect(res.status).toBe(400)
+    })
   })
 
   // ===== 设置 =====
@@ -224,6 +284,33 @@ describe('后台 API', () => {
       expect(res2.body.bio).toBe('新简介')
       expect(res2.body.announcement).toBe('新公告')
       expect(res2.body.social[0].label).toBe('GitHub')
+    })
+
+    it('更新设置支持 bgUrl 并读回', async () => {
+      const agent = await loginAgent()
+      await agent.put('/admin/api/settings').send({ bgUrl: '/uploads/202608/bg.jpg' })
+      const res = await agent.get('/admin/api/settings')
+      expect(res.status).toBe(200)
+      expect(res.body.bgUrl).toBe('/uploads/202608/bg.jpg')
+    })
+
+    it('social 含 javascript: 协议的链接被过滤', async () => {
+      const agent = await loginAgent()
+      await agent.put('/admin/api/settings').send({
+        social: [
+          { label: '正常', url: 'https://github.com/x' },
+          { label: '危险', url: 'javascript:alert(1)' },
+        ],
+      })
+      const res = await agent.get('/admin/api/settings')
+      expect(res.body.social).toHaveLength(1)
+      expect(res.body.social[0].label).toBe('正常')
+    })
+
+    it('avatarUrl 含 javascript: 协议返回 400', async () => {
+      const agent = await loginAgent()
+      const res = await agent.put('/admin/api/settings').send({ avatarUrl: 'javascript:alert(1)' })
+      expect(res.status).toBe(400)
     })
   })
 

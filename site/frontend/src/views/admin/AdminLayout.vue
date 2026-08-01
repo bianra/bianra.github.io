@@ -23,13 +23,13 @@ async function doLogout() {
 </script>
 
 <template>
-  <div style="min-height:100vh;display:flex;background:var(--bg);">
+  <div class="admin-shell" style="min-height:100vh;display:flex;background:var(--bg);">
     <!-- 左侧导航 -->
     <aside
-      class="glass-panel"
-      style="width:220px;margin:20px;padding:24px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:20px;height:calc(100vh - 40px);"
+      class="glass-panel admin-sidebar"
+      style="margin:20px;padding:24px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:20px;height:calc(100vh - 40px);"
     >
-      <div style="padding:8px 12px;margin-bottom:24px;">
+      <div class="brand-block" style="padding:8px 12px;margin-bottom:24px;">
         <div style="font-size:var(--fs-xl);font-weight:600;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent;">bianra</div>
         <div style="font-size:var(--fs-xs);color:var(--ink-2);margin-top:4px;">后台管理</div>
       </div>
@@ -44,7 +44,7 @@ async function doLogout() {
         <span>{{ item.label }}</span>
       </router-link>
 
-      <div style="flex:1;"></div>
+      <div class="spacer" style="flex:1;"></div>
 
       <button
         class="nav-item"
@@ -56,7 +56,7 @@ async function doLogout() {
     </aside>
 
     <!-- 主内容 -->
-    <main style="flex:1;padding:20px 20px 20px 0;">
+    <main class="admin-main" style="flex:1;padding:20px 20px 20px 0;">
       <RouterView v-slot="{ Component, route }">
         <div v-if="auth.checking" class="glass-panel" style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-2);min-height:70vh;">
           加载中...
@@ -68,6 +68,11 @@ async function doLogout() {
 </template>
 
 <style scoped>
+/* 侧栏固定宽度 */
+.admin-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+}
 .nav-item:hover {
   background: rgba(var(--accent-rgb), 0.08);
   color: var(--ink);
@@ -76,5 +81,38 @@ async function doLogout() {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(74, 168, 255, 0.12));
   color: var(--ink);
   font-weight: 600;
+}
+
+/* 响应式: ≤1024px 侧栏收起为顶部横向导航条 */
+@media (max-width: 1024px) {
+  .admin-shell {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    width: auto;
+    height: auto;
+    position: static;
+    margin: 12px;
+    padding: 10px 14px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .admin-sidebar .brand-block {
+    margin-bottom: 0;
+    margin-right: auto;
+    padding: 0 12px 0 4px;
+  }
+  .admin-sidebar .nav-item {
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+  .admin-sidebar .spacer {
+    display: none;
+  }
+  .admin-main {
+    padding: 12px;
+  }
 }
 </style>

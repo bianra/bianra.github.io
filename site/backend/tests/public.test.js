@@ -71,6 +71,43 @@ describe('公开 API', () => {
       expect(res.body.total).toBe(1)
       expect(res.body.pages).toBe(1)
     })
+
+    it('cat 参数按分类筛选', async () => {
+      await createArticle({ title: '学习篇', category: 'study' })
+      await createArticle({ title: '代码篇', category: 'code' })
+      const res = await request(app).get('/api/articles?cat=study')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].title).toBe('学习篇')
+      expect(res.body.items[0].category).toBe('study')
+      expect(res.body.total).toBe(1)
+    })
+
+    it('非法 cat 参数回退为全部', async () => {
+      await createArticle({ title: '任意', category: 'diary' })
+      const res = await request(app).get('/api/articles?cat=hacker')
+      expect(res.status).toBe(200)
+      expect(res.body.total).toBe(1)
+    })
+
+    it('q 参数按标题模糊搜索', async () => {
+      await createArticle({ title: '服务器安全日报' })
+      await createArticle({ title: '生活随笔' })
+      const res = await request(app).get('/api/articles?q=安全')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].title).toBe('服务器安全日报')
+      expect(res.body.total).toBe(1)
+    })
+
+    it('q 与 cat 组合筛选', async () => {
+      await createArticle({ title: 'React 学习', category: 'study' })
+      await createArticle({ title: 'React 代码', category: 'code' })
+      const res = await request(app).get('/api/articles?cat=study&q=React')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].title).toBe('React 学习')
+    })
   })
 
   describe('GET /api/articles/:id', () => {
@@ -119,7 +156,7 @@ describe('公开 API', () => {
       const res = await request(app).get('/robots.txt')
       expect(res.status).toBe(200)
       expect(res.text).toContain('Disallow: /admin/')
-      expect(res.text).toContain('Sitemap: https://bianra.com/sitemap.xml')
+      expect(res.text).toContain('Disallow: /api/')
     })
   })
 })

@@ -1,22 +1,21 @@
-// Theme store: 深色/浅色模式切换 + localStorage 持久化
+// Theme store: 固定深色模式 (用户确认: 不做切换按钮, 不跟随系统)
+// 保留 localStorage 兼容旧值, 但默认/兜底恒为 dark
 import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'bianra-theme'
-const MODES = ['light', 'dark']
 
 function loadSavedMode() {
   const saved = localStorage.getItem(STORAGE_KEY)
-  if (MODES.includes(saved)) return saved
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return saved === 'light' ? 'light' : 'dark'
 }
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
-    mode: 'light', // 初始值稍后在 apply() 时覆盖
+    mode: 'dark', // 初始值稍后在 apply() 时覆盖
   }),
 
   actions: {
-    // 启动时初始化: 读 localStorage → 无则跟随系统 → 写 <html class>
+    // 启动时初始化: 读 localStorage → 默认深色 → 写 <html class>
     init() {
       this.mode = loadSavedMode()
       this.apply()
@@ -29,7 +28,7 @@ export const useThemeStore = defineStore('theme', {
       else html.classList.remove('ks-dark')
     },
 
-    // 切换模式
+    // 无切换按钮; 保留 toggle/setMode 仅供潜在扩展 (未被 UI 调用)
     toggle() {
       this.mode = this.mode === 'dark' ? 'light' : 'dark'
       localStorage.setItem(STORAGE_KEY, this.mode)
@@ -37,7 +36,7 @@ export const useThemeStore = defineStore('theme', {
     },
 
     setMode(m) {
-      if (!MODES.includes(m)) return
+      if (!['light', 'dark'].includes(m)) return
       this.mode = m
       localStorage.setItem(STORAGE_KEY, this.mode)
       this.apply()
