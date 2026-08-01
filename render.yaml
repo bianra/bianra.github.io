@@ -12,7 +12,7 @@ services:
       npm ci
       npx prisma migrate deploy
       npx prisma db seed
-      cd ../frontend && npm ci && npm run build
+      cd ../frontend && NODE_ENV=development npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
