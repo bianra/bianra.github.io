@@ -70,10 +70,37 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
         <span class="logo-bian">bian</span><span class="logo-ra">ra</span>
       </RouterLink>
       <nav class="nav-links" aria-label="主导航">
-        <RouterLink to="/">首页</RouterLink>
-        <RouterLink to="/?cat=study">学习</RouterLink>
-        <RouterLink to="/?cat=code">代码</RouterLink>
-        <RouterLink to="/?cat=chat">闲谈</RouterLink>
+        <RouterLink to="/" class="nav-item" active-class="nav-active">
+          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>首页</span>
+        </RouterLink>
+        <RouterLink to="/?cat=study" class="nav-item" active-class="nav-active">
+          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+          </svg>
+          <span>学习</span>
+        </RouterLink>
+        <RouterLink to="/?cat=code" class="nav-item" active-class="nav-active">
+          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          <span>代码</span>
+        </RouterLink>
+        <RouterLink to="/?cat=chat" class="nav-item" active-class="nav-active">
+          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>闲谈</span>
+        </RouterLink>
       </nav>
       <div class="nav-right">
         <!-- 搜索容器: 图标按钮 + 向左展开的输入框 -->
@@ -168,31 +195,37 @@ html.ks-dark .top-navbar {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 6px;
   flex: 1;
   justify-content: center;
 }
-.nav-links a {
-  color: rgba(238, 230, 255, 0.78);
+.nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: rgba(238, 230, 255, 0.72);
   font-size: var(--fs-sm);
+  transition: background var(--transition), color var(--transition);
+}
+.nav-ico {
+  color: rgba(238, 230, 255, 0.55);
   transition: color var(--transition);
-  position: relative;
 }
-.nav-links a:hover { color: #fff; }
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--pink));
-  border-radius: 2px;
-  transition: width var(--transition), left var(--transition);
+.nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
-.nav-links a:hover::after {
-  width: 100%;
-  left: 0;
+.nav-item:hover .nav-ico { color: #fff; }
+/* 当前激活导航 */
+.nav-active,
+.nav-active:hover {
+  color: #fff;
+  background: rgba(var(--accent-rgb), 0.16);
+}
+.nav-active .nav-ico {
+  color: var(--pink);
 }
 
 .nav-right {
@@ -254,7 +287,23 @@ html.ks-dark .top-navbar {
 
 @media (max-width: 768px) {
   .nav-links {
-    display: none;
+    gap: 2px;
+    flex: none;
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 4px 8px 6px;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-item {
+    padding: 6px 10px;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .nav-inner {
+    flex-wrap: wrap;
   }
   /* 移动端搜索框窄一点 */
   .search-wrap.open .search-input {
