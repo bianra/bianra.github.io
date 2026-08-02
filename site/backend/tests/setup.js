@@ -49,13 +49,17 @@ export async function resetDb() {
 
 // 构造一篇测试文章
 export async function createArticle(overrides = {}) {
+  const { tags, ...rest } = overrides
   return prisma.article.create({
     data: {
       title: '测试文章',
       summary: '摘要',
       content: '# 正文',
       coverUrl: '',
-      ...overrides,
+      tags: '[]',
+      ...rest,
+      // tags 传数组则序列化
+      ...(tags !== undefined ? { tags: JSON.stringify(tags) } : {}),
     },
   })
 }

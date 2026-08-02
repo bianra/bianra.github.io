@@ -41,8 +41,9 @@ model Article {
   title     String // ≤100 字 (应用层校验)
   summary   String   @default("") // 摘要 ≤200 字
   content   String // Markdown 正文
-  coverUrl  String   @default("") // 封面图 URL
+  coverUrl  String   @default("") // 封面图 URL (暂不使用)
   category  String   @default("diary") // 分类: diary 日记 / study 学习 / code 代码
+  tags      String   @default("[]") // 标签 JSON 数组, 如 ["vue","日记"]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

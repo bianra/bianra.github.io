@@ -71,7 +71,7 @@ adminRouter.get('/articles', async (req, res, next) => {
 // 新建文章
 adminRouter.post('/articles', async (req, res, next) => {
   try {
-    const { title, summary, content, coverUrl, category } = req.body || {}
+    const { title, summary, content, coverUrl, category, tags } = req.body || {}
     const t = String(title || '').trim()
     if (!t) return res.status(400).json({ error: '标题不能为空' })
     if (t.length > 100) return res.status(400).json({ error: '标题不能超过 100 字' })
@@ -81,7 +81,7 @@ adminRouter.post('/articles', async (req, res, next) => {
     if (content && content.length > 100 * 1024) {
       return res.status(400).json({ error: '正文过大 (≤100KB)' })
     }
-    const a = await createArticle({ title: t, summary, content, coverUrl, category })
+    const a = await createArticle({ title: t, summary, content, coverUrl, category, tags })
     res.status(201).json({ id: a.id, title: a.title })
   } catch (e) {
     next(e)
@@ -91,7 +91,7 @@ adminRouter.post('/articles', async (req, res, next) => {
 // 编辑文章
 adminRouter.put('/articles/:id', async (req, res, next) => {
   try {
-    const { title, summary, content, coverUrl, category } = req.body || {}
+    const { title, summary, content, coverUrl, category, tags } = req.body || {}
     const t = String(title || '').trim()
     if (!t) return res.status(400).json({ error: '标题不能为空' })
     if (t.length > 100) return res.status(400).json({ error: '标题不能超过 100 字' })
@@ -103,7 +103,7 @@ adminRouter.put('/articles/:id', async (req, res, next) => {
     }
     const existing = await getArticleById(req.params.id)
     if (!existing) return res.status(404).json({ error: '文章不存在' })
-    const a = await updateArticle(req.params.id, { title: t, summary, content, coverUrl, category })
+    const a = await updateArticle(req.params.id, { title: t, summary, content, coverUrl, category, tags })
     res.json({ id: a.id, title: a.title })
   } catch (e) {
     next(e)

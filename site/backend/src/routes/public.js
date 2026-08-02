@@ -2,7 +2,7 @@
 import { Router } from 'express'
 
 import { getProfile } from '../services/profileService.js'
-import { listArticles, getArticleById, getCategoryCounts } from '../services/articleService.js'
+import { listArticles, getArticleById, getCategoryCounts, getTagCloud } from '../services/articleService.js'
 import { buildRssXml } from '../services/rssService.js'
 
 export const publicRouter = Router()
@@ -22,6 +22,15 @@ publicRouter.get('/profile', async (req, res, next) => {
 publicRouter.get('/category-counts', async (req, res, next) => {
   try {
     res.json(await getCategoryCounts())
+  } catch (e) {
+    next(e)
+  }
+})
+
+// GET /api/tag-cloud (标签云: 文章标签统计)
+publicRouter.get('/tag-cloud', async (req, res, next) => {
+  try {
+    res.json(await getTagCloud())
   } catch (e) {
     next(e)
   }

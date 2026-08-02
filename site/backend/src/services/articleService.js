@@ -8,12 +8,24 @@ const LIST_SELECT = {
   summary: true,
   coverUrl: true,
   category: true,
+  tags: true,
   createdAt: true,
   updatedAt: true,
 }
 
 // 合法分类
 const VALID_CATS = ['diary', 'study', 'code']
+
+// 解析 tags JSON → 数组 (非法/空 → [])
+function parseTags(tags) {
+  if (Array.isArray(tags)) return tags
+  try {
+    const arr = JSON.parse(tags || '[]')
+    return Array.isArray(arr) ? arr.filter((t) => typeof t === 'string' && t.trim()) : []
+  } catch {
+    return []
+  }
+}
 
 // 解析分页参数, 做边界裁剪
 function parsePaging({ page, limit } = {}) {
@@ -27,9 +39,18 @@ export async function listArticles(query = {}) {
   const { page, limit } = parsePaging(query)
   const cat = VALID_CATS.includes(String(query.cat)) ? String(query.cat) : null
   const q = String(query.q || '').trim()
+  const tag = String(query.tag || '').trim()
   const where = {}
   if (cat) where.category = cat
-  if (q) where.title = { contains: q }
+  if (q) {
+    // 全站搜索: 匹配标题 / 摘要 / 正文
+    where.OR = [
+      { title: { contains: q } },
+      { summary: { contains: q } },
+      { content: { contains: q } },
+    ]
+  }
+  if (tag) where.tags = { contains: `"${tag}"` }
   const [items, total] = await Promise.all([
     prisma.article.findMany({
       where,
@@ -40,14 +61,32 @@ export async function listArticles(query = {}) {
     }),
     prisma.article.count({ where }),
   ])
-  return { items, total, page, pages: Math.ceil(total / limit) || 0 }
+  // tags JSON → 数组
+  const rows = items.map((a) => ({ ...a, tags: parseTags(a.tags) }))
+  return { items: rows, total, page, pages: Math.ceil(total / limit) || 0 }
 }
 
 // GET /api/articles/:id (含 content)
 export async function getArticleById(id) {
   const n = Number(id)
   if (!Number.isInteger(n) || n < 1) return null
-  return prisma.article.findUnique({ where: { id: n } })
+  const a = await prisma.article.findUnique({ where: { id: n } })
+  if (!a) return null
+  return { ...a, tags: parseTags(a.tags) }
+}
+
+// 标签云: 统计所有文章标签出现次数, 返回 [{name, count}] 按次数降序
+export async function getTagCloud() {
+  const articles = await prisma.article.findMany({ select: { tags: true } })
+  const countMap = new Map()
+  for (const a of articles) {
+    for (const t of parseTags(a.tags)) {
+      countMap.set(t, (countMap.get(t) || 0) + 1)
+    }
+  }
+  return [...countMap.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
 // 各分类文章数 (主页侧栏统计用): { diary, study, code }
@@ -81,14 +120,17 @@ export async function listArticlesAdmin(query = {}) {
   const [items, total] = await Promise.all([
     prisma.article.findMany({
       where,
-      select: { id: true, title: true, coverUrl: true, updatedAt: true },
+      select: { id: true, title: true, coverUrl: true, updatedAt: true, tags: true },
       orderBy: { updatedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
     prisma.article.count({ where }),
   ])
-  return { items, total, page, pages: Math.ceil(total / limit) || 0 }
+  return {
+    items: items.map((a) => ({ ...a, tags: parseTags(a.tags) })),
+    total, page, pages: Math.ceil(total / limit) || 0,
+  }
 }
 
 // 新建文章
@@ -100,6 +142,7 @@ export async function createArticle(data) {
       content: data.content || '',
       coverUrl: data.coverUrl || '',
       category: VALID_CATS.includes(data.category) ? data.category : 'diary',
+      tags: JSON.stringify(parseTags(data.tags)),
     },
   })
 }
@@ -114,6 +157,7 @@ export async function updateArticle(id, data) {
   if (data.content !== undefined) update.content = data.content
   if (data.coverUrl !== undefined) update.coverUrl = data.coverUrl
   if (data.category !== undefined && VALID_CATS.includes(data.category)) update.category = data.category
+  if (data.tags !== undefined) update.tags = JSON.stringify(parseTags(data.tags))
   return prisma.article.update({ where: { id: n }, data: update })
 }
 

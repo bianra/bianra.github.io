@@ -108,6 +108,41 @@ describe('公开 API', () => {
       expect(res.body.items).toHaveLength(1)
       expect(res.body.items[0].title).toBe('React 学习')
     })
+
+    it('q 搜索正文内容', async () => {
+      await createArticle({ title: '标题无关键词', content: '# 这里提到 PostgreSQL 优化技巧' })
+      const res = await request(app).get('/api/articles?q=PostgreSQL')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].title).toBe('标题无关键词')
+    })
+
+    it('tag 参数按标签筛选', async () => {
+      await createArticle({ title: '带标签', tags: ['vue', '前端'] })
+      await createArticle({ title: '无标签' })
+      const res = await request(app).get('/api/articles?tag=vue')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].title).toBe('带标签')
+    })
+
+    it('列表返回 tags 数组', async () => {
+      await createArticle({ title: '标签文', tags: ['a', 'b'] })
+      const res = await request(app).get('/api/articles')
+      expect(res.status).toBe(200)
+      expect(Array.isArray(res.body.items[0].tags)).toBe(true)
+      expect(res.body.items[0].tags).toContain('a')
+    })
+
+    it('tag-cloud 返回标签统计', async () => {
+      await createArticle({ title: 'x1', tags: ['vue', '日记'] })
+      await createArticle({ title: 'x2', tags: ['vue'] })
+      const res = await request(app).get('/api/tag-cloud')
+      expect(res.status).toBe(200)
+      const vue = res.body.find((t) => t.name === 'vue')
+      expect(vue).toBeDefined()
+      expect(vue.count).toBe(2)
+    })
   })
 
   describe('GET /api/articles/:id', () => {

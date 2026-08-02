@@ -13,6 +13,7 @@ const title = ref('')
 const summary = ref('')
 const content = ref('')
 const category = ref('diary')   // 分类: diary 日记 / study 学习 / code 代码
+const tagsText = ref('')        // 标签 (逗号分隔的输入文本)
 const CATS = [
   { value: 'diary', label: '日记' },
   { value: 'study', label: '学习' },
@@ -41,7 +42,7 @@ function saveDraft() {
   localStorage.setItem(DRAFT_KEY, JSON.stringify({
     title: title.value, summary: summary.value,
     content: content.value,
-    category: category.value, ts: Date.now(),
+    category: category.value, tags: parseTagsInput(tagsText.value), ts: Date.now(),
   }))
 }
 function readDraft() {
@@ -83,7 +84,10 @@ async function onPickImage(e) {
   finally { uploading.value = false }
 }
 
-/* ===== 保存 ===== */
+// 标签文本 → 数组 (按逗号/空格/中文逗号切分, 去空去重)
+function parseTagsInput(str) {
+  return [...new Set(String(str || '').split(/[,，]/).map(s => s.trim()).filter(Boolean))]
+}
 async function save() {
   if (!title.value.trim()) { err.value = '标题不能为空'; return }
   saving.value = true; err.value = ''
@@ -92,6 +96,7 @@ async function save() {
       title: title.value.trim(), summary: summary.value,
       content: content.value,
       category: category.value,
+      tags: parseTagsInput(tagsText.value),
     }
     if (isEdit) {
       await adminApi.updateArticle(route.params.id, body)
@@ -113,6 +118,7 @@ onMounted(async () => {
       title.value = a.title || ''; summary.value = a.summary || ''
       content.value = a.content || ''
       category.value = a.category || 'diary'
+      tagsText.value = (Array.isArray(a.tags) ? a.tags : []).join(', ')
       // 有草稿且比文章新 → 询问恢复
       const d = readDraft()
       if (d && d.ts > new Date(a.updatedAt).getTime()) {
@@ -120,6 +126,7 @@ onMounted(async () => {
           title.value = d.title; summary.value = d.summary
           content.value = d.content
           if (d.category) category.value = d.category
+          if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
         } else { clearDraft() }
       }
     } catch (e) { err.value = '文章加载失败: ' + (e.message || '') }
@@ -131,6 +138,7 @@ onMounted(async () => {
       title.value = d.title; summary.value = d.summary
       content.value = d.content
       if (d.category) category.value = d.category
+      if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
     } else if (d) { clearDraft() }
   }
   draftTimer = setInterval(saveDraft, 30000)
@@ -179,6 +187,11 @@ onUnmounted(() => {
             style="padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;font-size:var(--fs-sm);">
             <option v-for="c in CATS" :key="c.value" :value="c.value">{{ c.label }}</option>
           </select>
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:6px;font-size:var(--fs-sm);color:var(--ink-2);">标签 <span style="opacity:.6;">(逗号分隔, 如: vue, 日记)</span></label>
+          <input v-model="tagsText" placeholder="vue, 生活, 服务器..."
+            style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;font-size:var(--fs-sm);" />
         </div>
       </div>
 

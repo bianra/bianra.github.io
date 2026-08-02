@@ -94,6 +94,7 @@ async function loadArticles() {
     const params = { page: 1, limit: PAGE_SIZE }
     if (route.query.cat) params.cat = route.query.cat
     if (route.query.q) params.q = route.query.q
+    if (route.query.tag) params.tag = route.query.tag
     const res = await publicApi.listArticles(params)
     articles.value = res?.items || []
     totalPages.value = res?.pages || 1
@@ -115,6 +116,7 @@ async function loadMore() {
     const params = { page: currentPage.value + 1, limit: PAGE_SIZE }
     if (route.query.cat) params.cat = route.query.cat
     if (route.query.q) params.q = route.query.q
+    if (route.query.tag) params.tag = route.query.tag
     const res = await publicApi.listArticles(params)
     articles.value = [...articles.value, ...(res?.items || [])]
     currentPage.value += 1
@@ -125,6 +127,23 @@ async function loadMore() {
 
 // 搜索关键词 (用于标题显示)
 const searchKeyword = computed(() => String(route.query.q || '').trim())
+
+// ====== 标签云 ======
+const tagCloud = ref([])
+async function loadTagCloud() {
+  try {
+    const data = await publicApi.getTagCloud()
+    tagCloud.value = data || []
+  } catch (_) { /* 忽略 */ }
+}
+
+// 当前激活标签 (路由 ?tag= 参数)
+const activeTag = computed(() => String(route.query.tag || '').trim())
+
+// 点击标签 → 跳首页按标签筛选
+function goTag(tag) {
+  router.push({ path: '/', query: { ...route.query, tag, page: undefined } })
+}
 
 // 监听路由 cat / q 变化重新加载
 // 顶部导航点击分类/搜索: 若已在首页(组件不重载), 加载后直接跳内容区, 不停在封页
@@ -142,6 +161,7 @@ async function onCatQueryChange() {
 }
 watch(() => route.query.cat, onCatQueryChange)
 watch(() => route.query.q, onCatQueryChange)
+watch(() => route.query.tag, onCatQueryChange)
 
 // ====== 滚动动画: 每帧更新 --hero-* / --nav-* CSS 变量 (不做 blur 纯淡出) ======
 // 吸附 (snap) 原则: 只在接近两端时才吸附, 中段 (18%~82%) 完全留给用户自由停, 不绑架滚动
@@ -251,6 +271,7 @@ function triggerSnap(target) {
 onMounted(async () => {
   await profileStore.fetchProfile()
   await loadArticles()
+  loadTagCloud()
   updateVars()
   setNav(false)  // 首页初始隐藏 TopNavbar (下滑时 setNav(true) 才显)
   startTypewriter() // 封页打字机
@@ -353,6 +374,7 @@ onBeforeUnmount(() => {
                 <p v-if="a.summary" class="article-summary">{{ a.summary }}</p>
                 <div class="article-tags">
                   <span class="tag">{{ CAT_MAP[a.category] || '日记' }}</span>
+                  <span v-for="t in (a.tags || [])" :key="t" class="tag tag-item" @click.prevent="goTag(t)"># {{ t }}</span>
                 </div>
               </RouterLink>
               <div v-else class="article-link">
@@ -381,6 +403,7 @@ onBeforeUnmount(() => {
                 <p v-if="a.summary" class="article-summary">{{ a.summary }}</p>
                 <div class="article-tags">
                   <span class="tag">{{ CAT_MAP[a.category] || '日记' }}</span>
+                  <span v-for="t in (a.tags || [])" :key="t" class="tag tag-item" @click.prevent="goTag(t)"># {{ t }}</span>
                 </div>
               </div>
             </li>
@@ -445,6 +468,22 @@ onBeforeUnmount(() => {
           </nav>
           <ProfileCard />
           <FortuneCard />
+
+          <!-- 标签云 -->
+          <div v-if="tagCloud.length" class="tag-cloud light-card">
+            <div class="tag-cloud-title">🏷 标签</div>
+            <div class="tag-cloud-body">
+              <button
+                v-for="t in tagCloud"
+                :key="t.name"
+                class="cloud-tag"
+                :class="{ active: activeTag === t.name }"
+                @click="goTag(t.name)"
+              >
+                {{ t.name }}<span class="cloud-count">{{ t.count }}</span>
+              </button>
+            </div>
+          </div>
         </aside>
       </div>
     </section>
@@ -666,6 +705,61 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(220, 212, 240, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.14);
+}
+/* 文章内可点击标签 */
+.tag-item {
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.tag-item:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: #fff;
+  border-color: rgba(var(--accent-rgb), 0.4);
+}
+
+/* 标签云 (侧栏) */
+.tag-cloud {
+  padding: 16px 18px;
+}
+.tag-cloud-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.tag-cloud-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cloud-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(220, 212, 240, 0.85);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.cloud-tag:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: #fff;
+  border-color: rgba(var(--accent-rgb), 0.4);
+  transform: translateY(-1px);
+}
+.cloud-tag.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+.cloud-count {
+  font-size: 10px;
+  opacity: 0.7;
 }
 
 /* 右: 侧栏 */
