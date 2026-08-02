@@ -63,13 +63,36 @@ async function loadArticles() {
   loading.value = true
   currentCat.value = CAT_MAP[route.query.cat] || ''
   try {
-    const params = { page: 1, limit: 10 }
+    const params = { page: 1, limit: PAGE_SIZE }
     if (route.query.cat) params.cat = route.query.cat
     if (route.query.q) params.q = route.query.q
     const res = await publicApi.listArticles(params)
     articles.value = res?.items || []
+    totalPages.value = res?.pages || 1
   } catch (_) { /* 后端未启动则占位 */ }
   loading.value = false
+}
+
+// ====== 分页: 加载更多 ======
+const PAGE_SIZE = 6
+const currentPage = ref(1)
+const totalPages = ref(1)
+const loadingMore = ref(false)
+const hasMore = computed(() => currentPage.value < totalPages.value)
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const params = { page: currentPage.value + 1, limit: PAGE_SIZE }
+    if (route.query.cat) params.cat = route.query.cat
+    if (route.query.q) params.q = route.query.q
+    const res = await publicApi.listArticles(params)
+    articles.value = [...articles.value, ...(res?.items || [])]
+    currentPage.value += 1
+    totalPages.value = res?.pages || 1
+  } catch (_) { /* 静默 */ }
+  loadingMore.value = false
 }
 
 // 搜索关键词 (用于标题显示)
@@ -79,6 +102,7 @@ const searchKeyword = computed(() => String(route.query.q || '').trim())
 // 顶部导航点击分类/搜索: 若已在首页(组件不重载), 加载后直接跳内容区, 不停在封页
 // 用无动画直跳 (auto), 避免 smooth 被吸附逻辑打断
 async function onCatQueryChange() {
+  currentPage.value = 1
   await loadArticles()
   if (route.query.cat || route.query.q) {
     await nextTick()
@@ -269,6 +293,12 @@ onBeforeUnmount(() => {
                 :to="`/post/${a.id}`"
                 class="article-link"
               >
+                <div v-if="a.coverUrl" class="article-cover">
+                  <img :src="a.coverUrl" :alt="a.title" loading="lazy" draggable="false" />
+                </div>
+                <div v-else class="article-cover article-cover-empty" aria-hidden="true">
+                  <span>{{ (a.title || '?').slice(0, 1) }}</span>
+                </div>
                 <h3 class="article-title">{{ a.title }}</h3>
                 <div class="article-meta">
                   <span v-if="a.createdAt" class="meta-item">
@@ -326,6 +356,13 @@ onBeforeUnmount(() => {
               </div>
             </li>
           </ul>
+
+          <!-- 加载更多 -->
+          <div v-if="hasMore" class="load-more-wrap">
+            <button class="load-more-btn" :disabled="loadingMore" @click="loadMore">
+              {{ loadingMore ? '加载中…' : '加载更多' }}
+            </button>
+          </div>
         </main>
 
         <!-- 左: 导航菜单 + Profile卡 -->
@@ -496,6 +533,61 @@ onBeforeUnmount(() => {
 .article-link:hover {
   /* 深色磨砂卡 hover: 底色稍亮 */
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* 文章封面图 (无封面则首字渐变占位) */
+.article-cover {
+  width: 100%;
+  height: 180px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: var(--bg);
+}
+.article-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.article-item:hover .article-cover img {
+  transform: scale(1.03);
+}
+.article-cover-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.35), rgba(74, 168, 255, 0.22));
+}
+.article-cover-empty span {
+  font-size: 52px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 加载更多 */
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+.load-more-btn {
+  padding: 10px 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.load-more-btn:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.2);
+  transform: translateY(-2px);
+}
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .article-title {
   font-size: var(--fs-lg);
