@@ -6,6 +6,7 @@ import { onMounted, onBeforeUnmount, ref, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProfileStore } from '../stores/profile.js'
 import { publicApi } from '../api/index.js'
+import { quoteOfDay, todayLocalStr } from '../utils/quotes.js'
 import ProfileCard from '../components/ProfileCard.vue'
 import FortuneCard from '../components/FortuneCard.vue'
 
@@ -19,6 +20,33 @@ const loading = ref(true)
 function readingMinutes(article) {
   const len = article?.content?.length || article?.summary?.length || 0
   return Math.max(1, Math.round(len / 400))
+}
+
+// ====== 封页打字机: 先打 LIFE · THOUGHTS, 再显示每日一言 ======
+const SLOGAN = 'LIFE · THOUGHTS'
+const typedText = ref('')            // 打字机当前显示的文本
+const quoteText = ref('')            // 今日一言 (打字机结束后淡入显示)
+const typing = ref(true)             // 打字中: 光标实心; 结束: 闪烁
+let typeTimer = 0
+
+function startTypewriter() {
+  typedText.value = ''
+  quoteText.value = ''
+  typing.value = true
+  let i = 0
+  clearInterval(typeTimer)
+  typeTimer = setInterval(() => {
+    i++
+    typedText.value = SLOGAN.slice(0, i)
+    if (i >= SLOGAN.length) {
+      clearInterval(typeTimer)
+      typing.value = false
+      // 打字结束后延迟显示每日一言
+      setTimeout(() => {
+        quoteText.value = quoteOfDay(todayLocalStr())
+      }, 400)
+    }
+  }, 90)
 }
 
 // 分类映射: cat 参数 → 中文标题
@@ -225,6 +253,7 @@ onMounted(async () => {
   await loadArticles()
   updateVars()
   setNav(false)  // 首页初始隐藏 TopNavbar (下滑时 setNav(true) 才显)
+  startTypewriter() // 封页打字机
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('resize', onScroll, { passive: true })
   // 主动交互 (滚轮/触摸) → 立即取消吸附, 不抢用户控制权
@@ -247,6 +276,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(rafId)
   clearTimeout(snapTimer)
   clearTimeout(inputLockTimer)
+  clearInterval(typeTimer)
   snappingLock = false
   userInteracting = false
   window.removeEventListener('scroll', onScroll)
@@ -263,10 +293,15 @@ onBeforeUnmount(() => {
   <div class="home-root">
     <!-- ====== 第一屏 Hero: 整页统一背景 (var(--bg-image)) + 中央艺术字 ====== -->
     <section id="bianra" class="hero-section" aria-label="封面">
-      <!-- 中央艺术字 bianra + LIFE · THOUGHTS (由 hero-art-wrap 统一应用渐隐动画) -->
+      <!-- 中央艺术字 bianra + 打字机副标 + 每日一言 (由 hero-art-wrap 统一应用渐隐动画) -->
       <div class="hero-art-wrap hero-center">
         <h1 class="art-bianra hero-word">bianra</h1>
-        <p class="hero-sub">LIFE &nbsp;·&nbsp; THOUGHTS</p>
+        <p class="hero-sub">
+          <span class="type-cursor" :class="{ blink: !typing }">{{ typedText }}</span>
+        </p>
+        <transition name="quote-fade">
+          <p v-if="quoteText" class="hero-quote">{{ quoteText }}</p>
+        </transition>
       </div>
 
       <!-- 底部 ↓ 箭头 (仅箭头, 无文字) + 平滑滚动锚点 -->
@@ -455,6 +490,41 @@ onBeforeUnmount(() => {
   text-indent: 0.38em;
   text-transform: uppercase;
   font-weight: 500;
+  min-height: 1.6em; /* 打字机期间占位, 防止跳动 */
+}
+
+/* 打字机光标 */
+.type-cursor::after {
+  content: '|';
+  margin-left: 2px;
+  color: rgba(var(--accent-rgb), 0.9);
+  animation: cursor-blink 0.8s step-end infinite;
+}
+.type-cursor.blink::after {
+  animation: none;
+  opacity: 1;
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 每日一言 */
+.hero-quote {
+  margin: 0;
+  font-size: clamp(13px, 1.4vw, 16px);
+  color: rgba(235, 225, 255, 0.85);
+  letter-spacing: 0.08em;
+  font-family: var(--font-art);
+  text-transform: none;
+  text-indent: 0;
+}
+.quote-fade-enter-active {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.quote-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 .hero-down {

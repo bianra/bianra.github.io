@@ -1,0 +1,59 @@
+/**
+ * 每日一言纯函数 (无副作用, 纯前端)
+ * 种子: 本地日期 + "|bianra-quote"
+ * 同一天恒定, 次日自动变化
+ */
+
+// ---------- 语录词库 ----------
+export const QUOTES = [
+  '慢慢来，比较快。',
+  '把今天过成绝版。',
+  '风会记得一朵花的香。',
+  '愿你拥有被讨厌的勇气。',
+  '世界很大，别在原地长大。',
+  '日子是重复的，快乐不是。',
+  '保持热爱，奔赴山海。',
+  '生活原本沉闷，但跑起来就有风。',
+  '重要的不是治愈，而是带着病痛活下去。',
+  '人要先感到幸福，才能看到玫瑰。',
+  '你来人间一趟，你要看看太阳。',
+  '万物皆有裂痕，那是光照进来的地方。',
+  '山不让尘，川不辞盈。',
+  '且视他人之疑目如盏盏鬼火，大胆去走你的夜路。',
+  '既然选择了远方，便只顾风雨兼程。',
+  '所有的为时已晚，其实都是恰逢其时。',
+  '生活明朗，万物可爱。',
+  '与其互为人间，不如自成宇宙。',
+  '满地都是六便士，他却抬头看见了月亮。',
+  '愿你千山暮雪，海棠依旧。',
+  '知命不惧，日日自新。',
+  '吹灭读书灯，一身都是月。',
+  '世间万物，抵不过你的安好。',
+  '没有一朵花，从一开始就是花。',
+  '步履不停，山海可平。',
+]
+
+// ---------- 主函数 ----------
+
+/**
+ * 获取今日一言 (按日期确定性选择)
+ * @param {string} dateStr YYYY-MM-DD (本地日期)
+ */
+export function quoteOfDay(dateStr) {
+  // 轻量字符串哈希 (FNV-1a 简化版), 避免 import 循环依赖
+  let hash = 0x811c9dc5
+  const key = `${dateStr}|bianra-quote`
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return QUOTES[hash % QUOTES.length]
+}
+
+/** 获取本地日期字符串 (YYYY-MM-DD) */
+export function todayLocalStr(d = new Date()) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
