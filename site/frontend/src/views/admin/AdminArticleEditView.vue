@@ -35,9 +35,16 @@ const md = createMd()
 const preview = computed(() => md.render(content.value || '*预览区: 开始写作后这里会实时显示渲染效果*'))
 
 // 预览内容变化后增强渲染 (代码复制按钮 + 折叠框)
-watch(preview, async () => {
-  await nextTick()
-  enhanceRendered(previewRef.value)
+// 防抖: 快速输入时避免频繁 DOM 遍历; try/catch 防止渲染异常中断
+let enhanceTimer = 0
+watch(preview, () => {
+  clearTimeout(enhanceTimer)
+  enhanceTimer = setTimeout(async () => {
+    try {
+      await nextTick()
+      enhanceRendered(previewRef.value)
+    } catch (_) { /* 渲染增强失败不影响编辑 */ }
+  }, 120)
 })
 
 const wordCount = computed(() => content.value.length)
@@ -140,8 +147,8 @@ async function save() {
 }
 
 onMounted(async () => {
-  if (isEdit) {
-    try {
+  try {
+    if (isEdit) {
       const a = await publicApi.getArticle(route.params.id)
       title.value = a.title || ''; summary.value = a.summary || ''
       content.value = a.content || ''
@@ -158,27 +165,33 @@ onMounted(async () => {
           if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
         } else { clearDraft() }
       }
-    } catch (e) { err.value = '文章加载失败: ' + (e.message || '') }
-    finally { loading.value = false }
-  } else {
-    // 新建页: 有草稿 → 询问恢复
-    const d = readDraft()
-    if (d && (d.title || d.content)) {
-      const ok = await confirm({ title: '恢复草稿', message: '检测到上次未完成的文章草稿, 是否恢复?', okText: '恢复' })
-      if (ok) {
-        title.value = d.title; summary.value = d.summary
-        content.value = d.content
-        if (d.category) category.value = d.category
-        if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
-      } else { clearDraft() }
-    } else if (d) { clearDraft() }
+    } else {
+      // 新建页: 有草稿 → 询问恢复
+      const d = readDraft()
+      if (d && (d.title || d.content)) {
+        const ok = await confirm({ title: '恢复草稿', message: '检测到上次未完成的文章草稿, 是否恢复?', okText: '恢复' })
+        if (ok) {
+          title.value = d.title; summary.value = d.summary
+          content.value = d.content
+          if (d.category) category.value = d.category
+          if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
+        } else { clearDraft() }
+      } else if (d) { clearDraft() }
+    }
+  } catch (e) {
+    // 任何加载/恢复异常都不阻塞编辑器
+    if (isEdit) err.value = '文章加载失败: ' + (e.message || '')
+    else clearDraft()
+  } finally {
+    loading.value = false
+    draftTimer = setInterval(saveDraft, 30000)
+    window.addEventListener('beforeunload', saveDraft)
   }
-  draftTimer = setInterval(saveDraft, 30000)
-  window.addEventListener('beforeunload', saveDraft)
 })
 
 onUnmounted(() => {
   clearInterval(draftTimer)
+  clearTimeout(enhanceTimer)
   window.removeEventListener('beforeunload', saveDraft)
 })
 </script>

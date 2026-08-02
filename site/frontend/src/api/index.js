@@ -1,7 +1,7 @@
 // 统一 API 封装 (fetch 封装 + 超时 + 401 登出)
 // 公开站 -> publicApi, 后台 -> adminApi
 
-const TIMEOUT_MS = 15000
+const TIMEOUT_MS = 30000
 
 // 生产环境用同源(同部署域名), dev 走 vite proxy 到 localhost:3000
 const BASE_URL = '' // 空字符串 = 相对路径, 由 dev proxy 转发

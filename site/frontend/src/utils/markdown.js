@@ -13,6 +13,10 @@ export function createMd() {
     linkify: true,
     breaks: true,
     highlight(str, lang) {
+      // 超大代码块 (≥50KB) 跳过语法高亮, 避免阻塞主线程卡死
+      if (str.length > 50000) {
+        return `<pre class="hljs code-box"><code>${md.utils.escapeHtml(str)}</code></pre>`
+      }
       if (lang && hljs.getLanguage(lang)) {
         try {
           return `<pre class="hljs code-box"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`

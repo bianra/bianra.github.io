@@ -10,7 +10,7 @@ import { createVNode, reactive, render } from 'vue'
 
 const HOST_CLASS = '__bianra_dialog_host'
 
-const s = reactive({ show: false, title: '确认', message: '', okText: '确定', cancelText: '取消', resolve: null })
+const s = reactive({ show: false, title: '确认', message: '', okText: '确定', cancelText: '取消', resolve: null, timeout: 0 })
 
 function ensureHost() {
   let host = document.querySelector('.' + HOST_CLASS)
@@ -52,9 +52,11 @@ function ensureHost() {
     const App = {
       setup() {
         function ok() {
+          clearTimeout(s.timeout)
           const r = s.resolve; s.resolve = null; s.show = false; r && r(true)
         }
         function cancel() {
+          clearTimeout(s.timeout)
           const r = s.resolve; s.resolve = null; s.show = false; r && r(false)
         }
         return () => {
@@ -90,6 +92,14 @@ export function confirm({ title = '确认操作', message = '', okText = '确定
     s.cancelText = cancelText
     s.resolve = resolve
     s.show = true
+    // 兜底: 60s 无操作自动取消, 防止 Promise 永不 resolve 导致页面卡死
+    clearTimeout(s.timeout)
+    s.timeout = setTimeout(() => {
+      const r = s.resolve
+      s.resolve = null
+      s.show = false
+      r && r(false)
+    }, 60000)
   })
 }
 </script>
