@@ -303,6 +303,20 @@ describe('后台 API', () => {
       expect(res.body.bgUrl).toBe('/uploads/202608/bg.jpg')
     })
 
+    it('更新设置支持 artFont 并读回', async () => {
+      const agent = await loginAgent()
+      await agent.put('/admin/api/settings').send({ artFont: 'pacifico' })
+      const res = await agent.get('/admin/api/settings')
+      expect(res.status).toBe(200)
+      expect(res.body.artFont).toBe('pacifico')
+    })
+
+    it('非法 artFont 返回 400', async () => {
+      const agent = await loginAgent()
+      const res = await agent.put('/admin/api/settings').send({ artFont: 'comic-sans-ms' })
+      expect(res.status).toBe(400)
+    })
+
     it('social 含 javascript: 协议的链接被过滤', async () => {
       const agent = await loginAgent()
       await agent.put('/admin/api/settings').send({

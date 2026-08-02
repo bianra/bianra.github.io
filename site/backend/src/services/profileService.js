@@ -18,6 +18,7 @@ export async function getProfile() {
     announcement: p.announcement,
     avatarUrl: p.avatarUrl,
     bgUrl: p.bgUrl,
+    artFont: p.artFont,
     social,
   }
 }
@@ -52,6 +53,16 @@ export async function updateProfile(data) {
       throw err
     }
     update.bgUrl = String(data.bgUrl)
+  }
+  if (data.artFont !== undefined) {
+    // 字体白名单: 仅允许前端字体库中存在的标识
+    const VALID_FONTS = ['lobster', 'great-vibes', 'pacifico', 'dancing-script', 'caveat']
+    if (!VALID_FONTS.includes(String(data.artFont))) {
+      const err = new Error('不支持的字体')
+      err.status = 400
+      throw err
+    }
+    update.artFont = String(data.artFont)
   }
   if (data.social !== undefined) {
     // 过滤并限制最多 5 个社交链接; 每个须有 label + 合法 url

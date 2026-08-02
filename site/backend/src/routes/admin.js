@@ -158,8 +158,8 @@ adminRouter.get('/settings', async (req, res, next) => {
 // 设置: 写
 adminRouter.put('/settings', async (req, res, next) => {
   try {
-    const { name, bio, announcement, avatarUrl, bgUrl, social } = req.body || {}
-    await updateProfile({ name, bio, announcement, avatarUrl, bgUrl, social })
+    const { name, bio, announcement, avatarUrl, bgUrl, artFont, social } = req.body || {}
+    await updateProfile({ name, bio, announcement, avatarUrl, bgUrl, artFont, social })
     res.json({ ok: true })
   } catch (e) {
     next(e)

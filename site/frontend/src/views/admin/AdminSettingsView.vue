@@ -2,7 +2,10 @@
 // 设置页: 资料(头像上传) + 社交链接动态增删(限5条) + 改密码
 import { onMounted, ref } from 'vue'
 import { adminApi } from '../../api/index.js'
-import { useProfileStore } from '../../stores/profile.js'
+import { useProfileStore, ART_FONTS } from '../../stores/profile.js'
+
+// 字体选项列表 (供选择器渲染)
+const fontOptions = Object.entries(ART_FONTS).map(([key, v]) => ({ key, label: v.label, font: v.font }))
 
 const profileStore = useProfileStore()
 
@@ -12,6 +15,7 @@ const bio = ref('')
 const announcement = ref('')
 const avatarUrl = ref('')
 const bgUrl = ref('')         // 全站背景图 (空 = 默认渐变)
+const artFont = ref('lobster') // 封页艺术字字体
 const social = ref([])
 const savingProfile = ref(false)
 const profileMsg = ref('')
@@ -34,6 +38,7 @@ async function load() {
   announcement.value = s.announcement || ''
   avatarUrl.value = s.avatarUrl || ''
   bgUrl.value = s.bgUrl || ''
+  artFont.value = s.artFont || 'lobster'
   social.value = Array.isArray(s.social) ? s.social.map(x => ({ label: x.label || '', url: x.url || '' })) : []
 }
 
@@ -79,6 +84,7 @@ async function saveProfile() {
       announcement: announcement.value,
       avatarUrl: avatarUrl.value,
       bgUrl: bgUrl.value,
+      artFont: artFont.value,
       social: cleanSocial,
     })
     social.value = cleanSocial
@@ -154,6 +160,32 @@ async function changePassword() {
             <input ref="bgInputRef" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="onPickBg" style="display:none;" />
           </div>
           <p style="margin-top:6px;font-size:11px;color:var(--ink-2);">建议尺寸 ≥1920×1080。留空使用默认紫黑渐变, 保存后全站立即生效。</p>
+        </div>
+
+        <div>
+          <label style="display:block;margin-bottom:8px;font-size:var(--fs-sm);color:var(--ink-2);">封页艺术字字体</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+            <button
+              v-for="fo in fontOptions"
+              :key="fo.key"
+              type="button"
+              @click="artFont = fo.key"
+              :style="{
+                padding:'14px 16px',
+                borderRadius:'var(--radius-sm)',
+                border: artFont === fo.key ? '2px solid var(--accent)' : '1px solid var(--border)',
+                background: artFont === fo.key ? 'rgba(var(--accent-rgb),0.12)' : 'var(--panel-solid)',
+                color:'var(--ink)',
+                cursor:'pointer',
+                textAlign:'center',
+                transition:'all var(--transition)',
+              }"
+            >
+              <span :style="{ fontFamily: fo.font, fontSize:'26px', display:'block', lineHeight:1.4, color:'#fff' }">bianra</span>
+              <span style="font-size:11px;color:var(--ink-2);">{{ fo.label }}</span>
+            </button>
+          </div>
+          <p style="margin-top:6px;font-size:11px;color:var(--ink-2);">点击预览选择封页 "bianra" 大字的字体风格, 保存后立即生效。</p>
         </div>
 
         <div>

@@ -31,6 +31,7 @@ model Profile {
   announcement String @default("") // 公告栏 (主页侧栏显示最近 1 条)
   avatarUrl    String @default("") // 头像 URL
   bgUrl        String @default("") // 全站背景图 URL (空 = 默认紫黑渐变)
+  artFont      String @default("lobster") // 封页艺术字字体标识
   social       String @default("[]") // JSON 数组 [{label, url}]
 }
 
