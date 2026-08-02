@@ -195,38 +195,38 @@ html.ks-dark .top-navbar {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
   justify-content: center;
 }
 .nav-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  color: rgba(238, 230, 255, 0.72);
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: var(--ink-2);
   font-size: var(--fs-sm);
-  transition: background var(--transition), color var(--transition);
+  font-weight: 500;
+  transition: all var(--transition);
 }
 .nav-ico {
-  color: rgba(238, 230, 255, 0.55);
-  transition: color var(--transition);
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity var(--transition);
 }
 .nav-item:hover {
-  color: #fff;
   background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
 }
-.nav-item:hover .nav-ico { color: #fff; }
-/* 当前激活导航 */
+.nav-item:hover .nav-ico { opacity: 1; }
+/* 当前激活导航 (与侧边导航 active 一致) */
 .nav-active,
 .nav-active:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  background: rgba(var(--accent-rgb), 0.16);
 }
-.nav-active .nav-ico {
-  color: var(--pink);
-}
+.nav-active .nav-ico { opacity: 1; }
 
 .nav-right {
   display: flex;
