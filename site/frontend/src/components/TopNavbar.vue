@@ -71,7 +71,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
       </RouterLink>
       <nav class="nav-links" aria-label="主导航">
         <RouterLink to="/">首页</RouterLink>
-        <RouterLink to="/?cat=diary">日记</RouterLink>
         <RouterLink to="/?cat=study">学习</RouterLink>
         <RouterLink to="/?cat=code">代码</RouterLink>
         <RouterLink to="/?cat=chat">闲谈</RouterLink>

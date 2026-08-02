@@ -148,18 +148,18 @@ describe('后台 API', () => {
       expect(detail.body.category).toBe('study')
     })
 
-    it('非法 category 回退 diary', async () => {
+    it('非法 category 回退 study', async () => {
       const agent = await loginAgent()
       const res = await agent.post('/admin/api/articles').send({
         title: '怪分类', category: 'hacker', content: 'x',
       })
       expect(res.status).toBe(201)
       const detail = await request(app).get(`/api/articles/${res.body.id}`)
-      expect(detail.body.category).toBe('diary')
+      expect(detail.body.category).toBe('study')
     })
 
     it('编辑文章可更新 category', async () => {
-      const a = await createArticle({ title: '换分类', category: 'diary' })
+      const a = await createArticle({ title: '换分类', category: 'study' })
       const agent = await loginAgent()
       await agent.put(`/admin/api/articles/${a.id}`).send({ title: '换分类', category: 'code' })
       const detail = await request(app).get(`/api/articles/${a.id}`)

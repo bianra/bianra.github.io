@@ -92,7 +92,7 @@ describe('公开 API', () => {
     })
 
     it('非法 cat 参数回退为全部', async () => {
-      await createArticle({ title: '任意', category: 'diary' })
+      await createArticle({ title: '任意', category: 'study' })
       const res = await request(app).get('/api/articles?cat=hacker')
       expect(res.status).toBe(200)
       expect(res.body.total).toBe(1)

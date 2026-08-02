@@ -12,10 +12,9 @@ const isEdit = !!route.params.id
 const title = ref('')
 const summary = ref('')
 const content = ref('')
-const category = ref('diary')   // 分类: diary 日记 / study 学习 / code 代码
+const category = ref('study')   // 分类: study 学习 / code 代码 / chat 闲谈
 const tagsText = ref('')        // 标签 (逗号分隔的输入文本)
 const CATS = [
-  { value: 'diary', label: '日记' },
   { value: 'study', label: '学习' },
   { value: 'code',  label: '代码' },
   { value: 'chat',  label: '闲谈' },
@@ -118,7 +117,7 @@ onMounted(async () => {
       const a = await publicApi.getArticle(route.params.id)
       title.value = a.title || ''; summary.value = a.summary || ''
       content.value = a.content || ''
-      category.value = a.category || 'diary'
+      category.value = a.category || 'study'
       tagsText.value = (Array.isArray(a.tags) ? a.tags : []).join(', ')
       // 有草稿且比文章新 → 询问恢复
       const d = readDraft()
@@ -190,7 +189,7 @@ onUnmounted(() => {
           </select>
         </div>
         <div>
-          <label style="display:block;margin-bottom:6px;font-size:var(--fs-sm);color:var(--ink-2);">标签 <span style="opacity:.6;">(逗号分隔, 如: vue, 日记)</span></label>
+          <label style="display:block;margin-bottom:6px;font-size:var(--fs-sm);color:var(--ink-2);">标签 <span style="opacity:.6;">(逗号分隔, 如: vue, 生活)</span></label>
           <input v-model="tagsText" placeholder="vue, 生活, 服务器..."
             style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;font-size:var(--fs-sm);" />
         </div>

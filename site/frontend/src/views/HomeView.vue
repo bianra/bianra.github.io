@@ -50,7 +50,7 @@ function startTypewriter() {
 }
 
 // 分类映射: cat 参数 → 中文标题
-const CAT_MAP = { diary: '日记', study: '学习', code: '代码', chat: '闲谈' }
+const CAT_MAP = { study: '学习', code: '代码', chat: '闲谈' }
 const currentCat = ref('')  // 当前分类 (空 = 全部)
 
 // 当前激活的分类 (空 = 首页/全部), 用于侧边导航高亮
@@ -77,7 +77,7 @@ function goHome() {
   navVisible = false
 }
 
-// 侧边导航点击: 日记/学习/代码 → 设置分类 + 滚到内容区
+// 侧边导航点击: 学习/代码/闲谈 → 设置分类 + 滚到内容区
 function goCat(cat) {
   // 同路径只改 query, 组件不重载, watch 会触发 loadArticles
   router.push({ path: '/', query: { cat } })
@@ -373,7 +373,7 @@ onBeforeUnmount(() => {
                 </div>
                 <p v-if="a.summary" class="article-summary">{{ a.summary }}</p>
                 <div class="article-tags">
-                  <span class="tag">{{ CAT_MAP[a.category] || '日记' }}</span>
+                  <span class="tag">{{ CAT_MAP[a.category] || '学习' }}</span>
                   <span v-for="t in (a.tags || [])" :key="t" class="tag tag-item" @click.prevent="goTag(t)"># {{ t }}</span>
                 </div>
               </RouterLink>
@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
                 </div>
                 <p v-if="a.summary" class="article-summary">{{ a.summary }}</p>
                 <div class="article-tags">
-                  <span class="tag">{{ CAT_MAP[a.category] || '日记' }}</span>
+                  <span class="tag">{{ CAT_MAP[a.category] || '学习' }}</span>
                   <span v-for="t in (a.tags || [])" :key="t" class="tag tag-item" @click.prevent="goTag(t)"># {{ t }}</span>
                 </div>
               </div>
@@ -431,17 +431,6 @@ onBeforeUnmount(() => {
                 </svg>
               </span>
               首页
-            </a>
-            <a href="/?cat=diary" class="side-nav-item" :class="{ active: activeCat === 'diary' }" @click.prevent="goCat('diary')">
-              <span class="nav-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
-                     stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-              </span>
-              日记
             </a>
             <a href="/?cat=study" class="side-nav-item" :class="{ active: activeCat === 'study' }" @click.prevent="goCat('study')">
               <span class="nav-icon" aria-hidden="true">

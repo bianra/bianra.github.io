@@ -8,10 +8,9 @@ import { publicApi } from '../api/index.js'
 const store = useProfileStore()
 const profile = computed(() => store.profile || {})
 
-// 分类文章数 (日记/学习/代码, 实时)
-const catCounts = ref({ diary: 0, study: 0, code: 0, chat: 0 })
+// 分类文章数 (学习/代码/闲谈, 实时)
+const catCounts = ref({ study: 0, code: 0, chat: 0 })
 const CATS = [
-  { key: 'diary', label: '日记', to: '/?cat=diary' },
   { key: 'study', label: '学习', to: '/?cat=study' },
   { key: 'code', label: '代码', to: '/?cat=code' },
   { key: 'chat', label: '闲谈', to: '/?cat=chat' },
@@ -20,7 +19,7 @@ const CATS = [
 onMounted(async () => {
   try {
     const data = await publicApi.getCategoryCounts()
-    catCounts.value = { diary: 0, study: 0, code: 0, chat: 0, ...(data || {}) }
+    catCounts.value = { study: 0, code: 0, chat: 0, ...(data || {}) }
   } catch (_) { /* 后端未启动则保持 0 */ }
 })
 
@@ -53,7 +52,7 @@ const avatarUrl = computed(() => profile.value.avatarUrl || null)
     <!-- 分割线 -->
     <div class="divider" role="presentation"></div>
 
-    <!-- 分类文章数 (日记/学习/代码) -->
+    <!-- 分类文章数 (学习/代码/闲谈) -->
     <div class="profile-stats">
       <RouterLink v-for="c in CATS" :key="c.key" :to="c.to" class="stat cat-stat">
         <div class="stat-num">{{ catCounts[c.key] || 0 }}</div>
