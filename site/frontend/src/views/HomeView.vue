@@ -9,10 +9,17 @@ import { publicApi } from '../api/index.js'
 import { quoteOfDay, todayLocalStr } from '../utils/quotes.js'
 import ProfileCard from '../components/ProfileCard.vue'
 import FortuneCard from '../components/FortuneCard.vue'
+import ArticleDialog from '../components/ArticleDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const profileStore = useProfileStore()
+
+// 文章悬浮框
+const dialogArticleId = ref(null)
+function openArticle(id) {
+  dialogArticleId.value = id
+}
 const articles = ref([])
 const loading = ref(true)
 
@@ -344,10 +351,11 @@ onBeforeUnmount(() => {
           <h2 v-else-if="searchKeyword" class="cat-title">搜索「{{ searchKeyword }}」</h2>
           <ul v-if="articles.length" class="article-list">
             <li v-for="(a, i) in articles" :key="a.id || i" class="article-item light-card fade-up" :style="`animation-delay:${i*40}ms`">
-              <RouterLink
+              <a
                 v-if="a.id"
-                :to="`/post/${a.id}`"
+                href="#"
                 class="article-link"
+                @click.prevent="openArticle(a.id)"
               >
                 <h3 class="article-title">{{ a.title }}</h3>
                 <div class="article-meta">
@@ -376,7 +384,7 @@ onBeforeUnmount(() => {
                   <span class="tag">{{ CAT_MAP[a.category] || '学习' }}</span>
                   <span v-for="t in (a.tags || [])" :key="t" class="tag tag-item" @click.prevent="goTag(t)"># {{ t }}</span>
                 </div>
-              </RouterLink>
+              </a>
               <div v-else class="article-link">
                 <h3 class="article-title">{{ a.title }}</h3>
                 <div class="article-meta">
@@ -486,6 +494,9 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
+
+    <!-- 文章悬浮框 (点击文章弹出, 背景不变) -->
+    <ArticleDialog :article-id="dialogArticleId" @close="dialogArticleId = null" />
   </div>
 </template>
 
