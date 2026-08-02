@@ -293,12 +293,6 @@ onBeforeUnmount(() => {
                 :to="`/post/${a.id}`"
                 class="article-link"
               >
-                <div v-if="a.coverUrl" class="article-cover">
-                  <img :src="a.coverUrl" :alt="a.title" loading="lazy" draggable="false" />
-                </div>
-                <div v-else class="article-cover article-cover-empty" aria-hidden="true">
-                  <span>{{ (a.title || '?').slice(0, 1) }}</span>
-                </div>
                 <h3 class="article-title">{{ a.title }}</h3>
                 <div class="article-meta">
                   <span v-if="a.createdAt" class="meta-item">
@@ -533,36 +527,6 @@ onBeforeUnmount(() => {
 .article-link:hover {
   /* 深色磨砂卡 hover: 底色稍亮 */
   background: rgba(255, 255, 255, 0.06);
-}
-
-/* 文章封面图 (无封面则首字渐变占位) */
-.article-cover {
-  width: 100%;
-  height: 180px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  margin-bottom: 14px;
-  background: var(--bg);
-}
-.article-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-.article-item:hover .article-cover img {
-  transform: scale(1.03);
-}
-.article-cover-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.35), rgba(74, 168, 255, 0.22));
-}
-.article-cover-empty span {
-  font-size: 52px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
 }
 
 /* 加载更多 */

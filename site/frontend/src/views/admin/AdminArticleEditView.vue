@@ -12,7 +12,6 @@ const isEdit = !!route.params.id
 const title = ref('')
 const summary = ref('')
 const content = ref('')
-const coverUrl = ref('')
 const category = ref('diary')   // 分类: diary 日记 / study 学习 / code 代码
 const CATS = [
   { value: 'diary', label: '日记' },
@@ -23,11 +22,9 @@ const saving = ref(false)
 const loading = ref(isEdit)
 const err = ref('')
 const uploading = ref(false)      // 正文插图上传中
-const uploadingCover = ref(false) // 封面上传中
 
 const editorRef = ref(null)       // textarea ref
 const imgInputRef = ref(null)     // 正文图片 file input
-const coverInputRef = ref(null)   // 封面 file input
 
 // markdown-it 实例 (与 PostView 一致: 禁原始 html 防 XSS)
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
@@ -43,7 +40,7 @@ function saveDraft() {
   if (!title.value && !content.value) return
   localStorage.setItem(DRAFT_KEY, JSON.stringify({
     title: title.value, summary: summary.value,
-    content: content.value, coverUrl: coverUrl.value,
+    content: content.value,
     category: category.value, ts: Date.now(),
   }))
 }
@@ -86,17 +83,6 @@ async function onPickImage(e) {
   finally { uploading.value = false }
 }
 
-/* ===== 封面上传 ===== */
-async function onPickCover(e) {
-  const file = e.target.files?.[0]
-  e.target.value = ''
-  if (!file) return
-  uploadingCover.value = true
-  try { const { url } = await adminApi.upload(file); coverUrl.value = url }
-  catch (er) { alert(er.message || '封面上传失败') }
-  finally { uploadingCover.value = false }
-}
-
 /* ===== 保存 ===== */
 async function save() {
   if (!title.value.trim()) { err.value = '标题不能为空'; return }
@@ -104,7 +90,7 @@ async function save() {
   try {
     const body = {
       title: title.value.trim(), summary: summary.value,
-      content: content.value, coverUrl: coverUrl.value,
+      content: content.value,
       category: category.value,
     }
     if (isEdit) {
@@ -125,14 +111,14 @@ onMounted(async () => {
     try {
       const a = await publicApi.getArticle(route.params.id)
       title.value = a.title || ''; summary.value = a.summary || ''
-      content.value = a.content || ''; coverUrl.value = a.coverUrl || ''
+      content.value = a.content || ''
       category.value = a.category || 'diary'
       // 有草稿且比文章新 → 询问恢复
       const d = readDraft()
       if (d && d.ts > new Date(a.updatedAt).getTime()) {
         if (confirm('检测到未保存的草稿(比文章新), 是否恢复?')) {
           title.value = d.title; summary.value = d.summary
-          content.value = d.content; coverUrl.value = d.coverUrl
+          content.value = d.content
           if (d.category) category.value = d.category
         } else { clearDraft() }
       }
@@ -143,7 +129,7 @@ onMounted(async () => {
     const d = readDraft()
     if (d && (d.title || d.content) && confirm('检测到上次未完成的文章草稿, 是否恢复?')) {
       title.value = d.title; summary.value = d.summary
-      content.value = d.content; coverUrl.value = d.coverUrl
+      content.value = d.content
       if (d.category) category.value = d.category
     } else if (d) { clearDraft() }
   }
@@ -193,22 +179,6 @@ onUnmounted(() => {
             style="padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;font-size:var(--fs-sm);">
             <option v-for="c in CATS" :key="c.value" :value="c.value">{{ c.label }}</option>
           </select>
-        </div>
-        <div>
-          <label style="display:block;margin-bottom:6px;font-size:var(--fs-sm);color:var(--ink-2);">封面图</label>
-          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-            <div v-if="coverUrl" style="width:120px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;">
-              <img :src="coverUrl" alt="封面" style="width:100%;height:100%;object-fit:cover;" />
-            </div>
-            <button class="btn-ghost" :disabled="uploadingCover" @click="coverInputRef?.click()" style="flex-shrink:0;">
-              {{ uploadingCover ? '上传中...' : (coverUrl ? '更换封面' : '上传封面') }}
-            </button>
-            <button v-if="coverUrl" class="btn-danger-text" @click="coverUrl = ''" style="flex-shrink:0;">移除</button>
-            <input ref="coverInputRef" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="onPickCover" style="display:none;" />
-            <span style="font-size:var(--fs-xs);color:var(--ink-2);">或直接填 URL</span>
-            <input v-model="coverUrl" type="text" placeholder="https://..."
-              style="flex:1;min-width:200px;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;font-size:var(--fs-sm);" />
-          </div>
         </div>
       </div>
 

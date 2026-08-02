@@ -111,7 +111,6 @@ const pageList = computed(() => {
             <th style="padding:10px 12px;text-align:left;width:40px;">
               <input type="checkbox" :checked="allChecked" @change="toggleAll" style="accent-color:var(--accent);" />
             </th>
-            <th style="padding:10px 12px;text-align:left;width:84px;">封面</th>
             <th style="padding:10px 12px;text-align:left;">标题</th>
             <th style="padding:10px 12px;text-align:left;">更新时间</th>
             <th style="padding:10px 12px;text-align:right;">操作</th>
@@ -121,12 +120,6 @@ const pageList = computed(() => {
           <tr v-for="a in data.items" :key="a.id" style="border-top:1px solid var(--border);">
             <td style="padding:10px 12px;">
               <input type="checkbox" :checked="selected.has(a.id)" @change="toggleOne(a.id)" style="accent-color:var(--accent);" />
-            </td>
-            <td style="padding:8px 12px;">
-              <div v-if="a.coverUrl" style="width:60px;height:40px;border-radius:6px;overflow:hidden;background:var(--border);">
-                <img :src="a.coverUrl" :alt="a.title" style="width:100%;height:100%;object-fit:cover;" />
-              </div>
-              <div v-else style="width:60px;height:40px;border-radius:6px;background:linear-gradient(135deg,rgba(var(--accent-rgb),0.18),rgba(74,168,255,0.12));display:flex;align-items:center;justify-content:center;color:var(--ink-2);font-size:var(--fs-xs);">无</div>
             </td>
             <td style="padding:10px 12px;font-weight:500;">{{ a.title }}</td>
             <td style="padding:10px 12px;color:var(--ink-2);font-size:var(--fs-sm);">

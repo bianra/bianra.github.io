@@ -97,11 +97,6 @@ watch(routeId, (id) => id && loadArticle(id))
       </div>
 
       <article v-else class="post-article">
-        <!-- 封面图 -->
-        <div v-if="article.coverUrl" class="cover-wrap">
-          <img :src="article.coverUrl" :alt="article.title" draggable="false" />
-        </div>
-
         <!-- 标题 + meta -->
         <header class="post-header">
           <h1 class="post-title">{{ article.title }}</h1>
@@ -195,22 +190,6 @@ watch(routeId, (id) => id && loadArticle(id))
   gap: 20px;
   color: #fff;
 }
-.cover-wrap {
-  width: 100%;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-}
-.cover-wrap img {
-  width: 100%;
-  height: auto;
-  max-height: 380px;
-  object-fit: cover;
-  display: block;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
 .post-header { margin-bottom: 4px; }
 .post-title {
   font-size: clamp(26px, 4vw, 38px);
@@ -341,6 +320,5 @@ watch(routeId, (id) => id && loadArticle(id))
   .post-body { padding: 24px 20px; font-size: 15px; }
   .post-body :deep(h1) { font-size: 24px; }
   .post-body :deep(h2) { font-size: 20px; }
-  .cover-wrap img { max-height: 260px; }
 }
 </style>
