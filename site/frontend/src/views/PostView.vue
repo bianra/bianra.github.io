@@ -1,21 +1,16 @@
 <script setup>
-// 文章详情页: markdown-it 渲染 + 封面大图 + 阅读时长(按字数估算)
+// 文章详情页: markdown-it 渲染 + 小框/代码高亮 + 阅读时长
 import { onMounted, onBeforeUnmount, computed, ref, watch, nextTick } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { publicApi } from '../api/index.js'
-import MarkdownIt from 'markdown-it'
+import { createMd, enhanceRendered } from '../utils/markdown.js'
 
 const route = useRoute()
 const article = ref(null)
 const loading = ref(true)
 const err = ref(null)
 const html = ref('')
-const md = new MarkdownIt({
-  html: false,       // XSS 防护: 禁止渲染原生 HTML
-  linkify: true,
-  breaks: true,
-  typographer: false,
-})
+const md = createMd()
 
 const routeId = computed(() => route.params?.id ?? '')
 
@@ -53,6 +48,8 @@ async function loadArticle(id) {
       img.setAttribute('draggable', 'false')
       if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy')
     })
+    // 代码块复制按钮 + 折叠框
+    enhanceRendered(document.querySelector('.post-body'))
   }
 }
 

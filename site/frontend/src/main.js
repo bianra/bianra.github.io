@@ -8,6 +8,8 @@ import { useThemeStore } from './stores/theme.js'
 import { useAuthStore } from './stores/auth.js'
 import './styles/tokens.css'
 import './style.css'
+// highlight.js 代码高亮主题 (适配全站深色模式)
+import 'highlight.js/styles/github-dark.css'
 
 const app = createApp(App)
 const pinia = createPinia()

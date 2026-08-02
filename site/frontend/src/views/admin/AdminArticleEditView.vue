@@ -1,11 +1,11 @@
 <script setup>
 // 新建/编辑文章: 双栏编辑器 + 工具栏 + 实时预览 + 图片上传 + 自动草稿
-import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, computed, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MarkdownIt from 'markdown-it'
 import { adminApi, publicApi } from '../../api/index.js'
 import { confirm } from '../../components/ConfirmDialog.vue'
 import { toast } from '../../components/Toast.vue'
+import { createMd, enhanceRendered } from '../../utils/markdown.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,11 +27,18 @@ const err = ref('')
 const uploading = ref(false)      // 正文插图上传中
 
 const editorRef = ref(null)       // textarea ref
+const previewRef = ref(null)      // 预览区 ref (增强渲染用)
 const imgInputRef = ref(null)     // 正文图片 file input
 
-// markdown-it 实例 (与 PostView 一致: 禁原始 html 防 XSS)
-const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
+// markdown-it 实例 (统一配置: 小框/代码高亮, 禁原始 html 防 XSS)
+const md = createMd()
 const preview = computed(() => md.render(content.value || '*预览区: 开始写作后这里会实时显示渲染效果*'))
+
+// 预览内容变化后增强渲染 (代码复制按钮 + 折叠框)
+watch(preview, async () => {
+  await nextTick()
+  enhanceRendered(previewRef.value)
+})
 
 const wordCount = computed(() => content.value.length)
 
@@ -66,6 +73,25 @@ function applyFormat(type) {
     case 'h2':    insert = `## ${sel || '标题'}`;  caretStart = caretEnd = s + insert.length; break
     case 'link':  insert = `[${sel || '链接文字'}](https://)`; caretStart = s + (sel ? 1 : 1); caretEnd = s + (sel || '链接文字').length + 1; break
     case 'ul':    insert = `- ${sel || '列表项'}`; caretStart = caretEnd = s + insert.length; break
+    // ===== 小框 =====
+    case 'code': {
+      const lang = sel ? '' : 'js'
+      insert = `\n\`\`\`${lang}\n${sel || '// 在这里写代码'}\n\`\`\`\n`
+      caretStart = s + insert.indexOf(sel || '// ') + (sel ? 0 : 4)
+      caretEnd = caretStart + (sel || '').length
+      break
+    }
+    case 'tip':
+    case 'note':
+    case 'warning':
+    case 'danger':
+    case 'quote':
+    case 'details': {
+      insert = `\n:::${type} ${sel || '标题'}\n${sel || '在这里填写内容...'}\n:::\n`
+      caretStart = s + insert.indexOf('在这里填写内容')
+      caretEnd = caretStart + (sel || '在这里填写内容').length
+      break
+    }
   }
   content.value = val.slice(0, s) + insert + val.slice(e)
   nextTick(() => { ta.focus(); ta.setSelectionRange(caretStart, caretEnd) })
@@ -210,6 +236,14 @@ onUnmounted(() => {
           <button class="tool-btn" title="二级标题" @click="applyFormat('h2')">H2</button>
           <button class="tool-btn" title="链接" @click="applyFormat('link')">🔗</button>
           <button class="tool-btn" title="无序列表" @click="applyFormat('ul')">• 列表</button>
+          <span class="tool-sep" aria-hidden="true"></span>
+          <button class="tool-btn" title="代码框(高亮+复制)" @click="applyFormat('code')">⌨ 代码</button>
+          <button class="tool-btn callout-btn" title="提示框" @click="applyFormat('tip')">💡 提示</button>
+          <button class="tool-btn callout-btn" title="备注框" @click="applyFormat('note')">📝 备注</button>
+          <button class="tool-btn callout-btn" title="警告框" @click="applyFormat('warning')">⚠️ 警告</button>
+          <button class="tool-btn callout-btn" title="危险框" @click="applyFormat('danger')">🚫 危险</button>
+          <button class="tool-btn callout-btn" title="引用框" @click="applyFormat('quote')">💬 引用</button>
+          <button class="tool-btn callout-btn" title="折叠详情框" @click="applyFormat('details')">📂 折叠</button>
           <button class="tool-btn" title="插入图片" :disabled="uploading" @click="imgInputRef?.click()">
             {{ uploading ? '上传中...' : '🖼 图片' }}
           </button>
@@ -227,7 +261,7 @@ onUnmounted(() => {
             spellcheck="false"
             class="editor-textarea"
           ></textarea>
-          <div class="editor-preview md-body" v-html="preview"></div>
+          <div ref="previewRef" class="editor-preview md-body" v-html="preview"></div>
         </div>
       </div>
     </template>
@@ -247,6 +281,15 @@ onUnmounted(() => {
 }
 .tool-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tool-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+/* 小框按钮: 稍醒目 */
+.callout-btn { font-size: 12px; }
 .editor-grid {
   display: grid; grid-template-columns: 1fr 1fr; min-height: 480px;
 }
