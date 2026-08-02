@@ -13,6 +13,7 @@ import {
   deleteArticles,
   getArticleById,
   getStats,
+  validateArticleInput,
 } from '../services/articleService.js'
 import { getProfile, updateProfile } from '../services/profileService.js'
 import { saveImage } from '../services/fileService.js'
@@ -73,14 +74,8 @@ adminRouter.post('/articles', async (req, res, next) => {
   try {
     const { title, summary, content, coverUrl, category, tags } = req.body || {}
     const t = String(title || '').trim()
-    if (!t) return res.status(400).json({ error: '标题不能为空' })
-    if (t.length > 100) return res.status(400).json({ error: '标题不能超过 100 字' })
-    if (summary && String(summary).length > 200) {
-      return res.status(400).json({ error: '摘要不能超过 200 字' })
-    }
-    if (content && content.length > 100 * 1024) {
-      return res.status(400).json({ error: '正文过大 (≤100KB)' })
-    }
+    const invalid = validateArticleInput({ title: t, summary, content })
+    if (invalid) return res.status(400).json(invalid)
     const a = await createArticle({ title: t, summary, content, coverUrl, category, tags })
     res.status(201).json({ id: a.id, title: a.title })
   } catch (e) {
@@ -93,14 +88,8 @@ adminRouter.put('/articles/:id', async (req, res, next) => {
   try {
     const { title, summary, content, coverUrl, category, tags } = req.body || {}
     const t = String(title || '').trim()
-    if (!t) return res.status(400).json({ error: '标题不能为空' })
-    if (t.length > 100) return res.status(400).json({ error: '标题不能超过 100 字' })
-    if (summary && String(summary).length > 200) {
-      return res.status(400).json({ error: '摘要不能超过 200 字' })
-    }
-    if (content && content.length > 100 * 1024) {
-      return res.status(400).json({ error: '正文过大 (≤100KB)' })
-    }
+    const invalid = validateArticleInput({ title: t, summary, content })
+    if (invalid) return res.status(400).json(invalid)
     const existing = await getArticleById(req.params.id)
     if (!existing) return res.status(404).json({ error: '文章不存在' })
     const a = await updateArticle(req.params.id, { title: t, summary, content, coverUrl, category, tags })

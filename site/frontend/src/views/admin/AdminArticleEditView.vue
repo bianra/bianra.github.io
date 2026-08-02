@@ -4,6 +4,8 @@ import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import { adminApi, publicApi } from '../../api/index.js'
+import { confirm } from '../../components/ConfirmDialog.vue'
+import { toast } from '../../components/Toast.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,7 +82,7 @@ async function onPickImage(e) {
     const ta = editorRef.value
     const s = ta?.selectionStart ?? content.value.length
     content.value = content.value.slice(0, s) + `\n![](${url})\n` + content.value.slice(s)
-  } catch (er) { alert(er.message || '图片上传失败') }
+  } catch (er) { toast.error(er.message || '图片上传失败') }
   finally { uploading.value = false }
 }
 
@@ -106,7 +108,7 @@ async function save() {
       clearDraft()
       router.replace({ name: 'admin-article-edit', params: { id: r.id } })
     }
-    alert('✅ 保存成功')
+    toast.success('✅ 保存成功')
   } catch (e) { err.value = e.message || '保存失败' }
   finally { saving.value = false }
 }
@@ -122,7 +124,8 @@ onMounted(async () => {
       // 有草稿且比文章新 → 询问恢复
       const d = readDraft()
       if (d && d.ts > new Date(a.updatedAt).getTime()) {
-        if (confirm('检测到未保存的草稿(比文章新), 是否恢复?')) {
+        const ok = await confirm({ title: '恢复草稿', message: '检测到未保存的草稿(比文章新), 是否恢复?', okText: '恢复' })
+        if (ok) {
           title.value = d.title; summary.value = d.summary
           content.value = d.content
           if (d.category) category.value = d.category
@@ -134,11 +137,14 @@ onMounted(async () => {
   } else {
     // 新建页: 有草稿 → 询问恢复
     const d = readDraft()
-    if (d && (d.title || d.content) && confirm('检测到上次未完成的文章草稿, 是否恢复?')) {
-      title.value = d.title; summary.value = d.summary
-      content.value = d.content
-      if (d.category) category.value = d.category
-      if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
+    if (d && (d.title || d.content)) {
+      const ok = await confirm({ title: '恢复草稿', message: '检测到上次未完成的文章草稿, 是否恢复?', okText: '恢复' })
+      if (ok) {
+        title.value = d.title; summary.value = d.summary
+        content.value = d.content
+        if (d.category) category.value = d.category
+        if (d.tags) tagsText.value = (Array.isArray(d.tags) ? d.tags : []).join(', ')
+      } else { clearDraft() }
     } else if (d) { clearDraft() }
   }
   draftTimer = setInterval(saveDraft, 30000)

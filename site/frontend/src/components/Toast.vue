@@ -1,7 +1,7 @@
-<script setup>
+<script>
 /**
  * 全局轻提示 Toast
- * 用法 (Pinia 样式):
+ * 用法:
  *   import { toast } from '@/components/Toast.vue'
  *   toast.success('保存成功')
  *   toast.error('失败啦')
@@ -79,4 +79,8 @@ export const toast = {
   warn:    (t, o) => show(t, { ...o, type: 'warn' }),
   error:   (t, o) => show(t, { ...o, type: 'error' }),
 }
+</script>
+
+<script setup>
+// 无模板组件: 纯 JS 服务 (toast 导出在普通 <script> 中)
 </script>

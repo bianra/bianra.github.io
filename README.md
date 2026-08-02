@@ -1,110 +1,208 @@
 # bianra 小屋 v2
 
-个人文章网站:全屏 "bianra" 大字封面 + 玻璃拟态双栏布局(左侧悬浮个人信息窗 + 中间文章流),带独立后台管理(发布/编辑文章 + 配图上传 + 个人资料维护)。
+个人文章网站:全屏 "bianra" 艺术字封面 + 玻璃拟态双栏布局(左侧悬浮信息窗 + 中间文章流),带独立后台管理系统。
 
-- 技术栈:Express 5 + Prisma 6 + Vue 3 + Vite(全 Node)
-- 数据库:PostgreSQL(Neon,本地与生产一致)
-- 部署:单服务同源(Express 托管前端 dist,方案 X)
+**线上地址**:https://bianra.com(自动跳转 www.bianra.com)
 
-## 目录结构
+---
+
+## 一、技术栈
+
+| 层 | 技术 | 说明 |
+|---|---|---|
+| 后端框架 | **Express 5**(Node.js) | 工厂模式 + 中间件链 |
+| ORM / 数据库 | **Prisma 6** + **Neon PostgreSQL 17**(免费) | 全 PG 方案,本地与生产一致 |
+| 前端 | **Vue 3.5** + **Vite 8** + **Vue Router 5** + **Pinia 4** | 单页应用,SPA |
+| Markdown | **markdown-it 15**(`html: false` 防 XSS) | 文章渲染 |
+| 认证 | **express-session + bcryptjs** | 单管理员,HttpOnly Cookie |
+| 图片上传 | **multer + file-type + image-size** | 魔数校验 + 像素上限(8000px)+ 5MB 限制 |
+| 安全 | **helmet + cors** + 参数化查询 + URL 白名单 | 输入校验、生产隐藏堆栈 |
+| 测试 | **Vitest + supertest**(59 用例) | 单元 + 集成 |
+| 部署 | **Render**(免费实例)+ Neon + 阿里云 DNS | 单服务同源部署 |
+
+---
+
+## 二、架构
+
+```
+浏览器 (bianra.com / www.bianra.com)
+        │
+        ▼
+┌────────────────────────────────────────────────┐
+│      Render 免费实例 (单服务, 同源部署)           │
+│      https://bianra-site.onrender.com           │
+│  ┌──────────────────────────────────────────┐  │
+│  │  Express 5 后端                           │  │
+│  │   ├─ 公开 API  (/api/*)                  │  │
+│  │   ├─ 后台 API  (/admin/api/*)            │  │
+│  │   ├─ 静态托管: 前端 dist (SPA)            │  │
+│  │   └─ 上传图片读取 (/uploads/:id, 存DB)    │  │
+│  └──────────────────────────────────────────┘  │
+└──────────────────┬─────────────────────────────┘
+                   ▼
+        ┌────────────────────────┐
+        │  Neon PostgreSQL 17     │
+        │  文章 / 资料 / 图片二进制 │
+        └────────────────────────┘
+```
+
+**核心设计**:前端构建产物 `frontend/dist` 由 Express 直接托管(方案 X),前后端同源,无跨域问题、cookie 天然同源;上传图片存数据库,绕开 Render 免费实例磁盘不持久的问题。
+
+---
+
+## 三、功能
+
+### 公开站
+- **封页 Hero**:全屏 "bianra" 艺术字(滚动淡出)+ 打字机副标 + 每日一言
+- **文章流**:分类筛选(学习/代码/闲谈)+ 标签筛选 + 标题/摘要/正文搜索 + 分页加载更多
+- **文章详情**:Markdown 渲染、标签、正文插图
+- **每日抽签**:纯前端确定性 PRNG,当日固定可分享
+- **字体库**:15 款本地托管字体,封页艺术字可自由切换
+- **RSS**:`/api/feed.xml` 订阅
+
+### 后台(`/admin`)
+- 登录 / 登出 / 改密码
+- 仪表盘(文章总数 + 最近文章)
+- 文章管理:新建/编辑(双栏编辑器 + 插图上传 + 草稿自动保存)、分类/标签、搜索分页、批量删除
+- 设置:资料(头像/简介/公告)、背景图、**封页字体选择**、社交链接、改密码
+
+---
+
+## 四、数据模型
+
+| 表 | 字段 | 说明 |
+|---|---|---|
+| `Admin` | username, passwordHash | 单管理员 |
+| `Profile` | name, bio, announcement, avatarUrl, bgUrl, **artFont**, social | 单例(id=1) |
+| `Article` | title, summary, content, coverUrl, category, **tags**(JSON), createdAt, updatedAt | 分类: study/code/chat |
+| `Upload` | mime, data(BYTEA) | 上传图片二进制 |
+
+---
+
+## 五、API 概览
+
+### 公开(`/api`)
+| Method | Path | 说明 |
+|---|---|---|
+| GET | `/profile` | 个人资料 |
+| GET | `/articles?page&limit&cat&tag&q` | 文章列表(分类/标签/全站搜索) |
+| GET | `/articles/:id` | 文章详情 |
+| GET | `/category-counts` | 各分类文章数 |
+| GET | `/tag-cloud` | 标签云统计 |
+| GET | `/feed.xml` | RSS |
+| GET | `/uploads/:id` | 上传图片(数据库读取) |
+| GET | `/health` | 健康检查(监控用) |
+
+### 后台(`/admin/api`,需登录)
+login / logout / check-auth / stats / articles(CRUD+批量删) / upload / settings(含 artFont)/ settings/password
+
+---
+
+## 六、本地开发
+
+### 前置
+- Node.js 18+(推荐 20/22)
+- 一个 Neon 免费库(https://neon.tech),拿 PostgreSQL 连接串
+
+### 后端
+```bash
+cd site/backend
+npm install
+cp .env.example .env
+# 编辑 .env: DATABASE_URL=你的Neon连接串, SESSION_SECRET=随机长串, ADMIN_PASSWORD=初始密码(可选)
+npx prisma migrate dev   # 建表
+npm run prisma:seed      # 初始管理员 + Profile
+npm run dev              # http://localhost:3000
+```
+
+### 前端
+```bash
+cd site/frontend
+npm install
+npm run dev              # http://localhost:5173 (代理 /api → :3000)
+```
+
+访问 `http://localhost:5173`(公开站)、`/admin`(后台,默认账号 bianra + seed 密码)。
+
+### 测试
+```bash
+cd site/backend
+npm test                 # 59 用例(连接 Neon 独立 test schema)
+```
+
+---
+
+## 七、部署(Render + Neon)
+
+1. **Neon**:创建项目,复制连接串
+2. **Render**:New → Blueprint → 选仓库(读取 `render.yaml`,rootDir=`site/backend`,plan=free)
+3. 填环境变量:
+   - `DATABASE_URL` = Neon 连接串
+   - `SESSION_SECRET` = 随机长串
+   - `ADMIN_PASSWORD` = 初始管理员密码
+   - `CORS_ORIGIN` = `https://bianra.com`
+   - `SITE_URL` = `https://bianra.com`
+4. 构建(buildCommand):`npm ci` → `prisma migrate deploy` → `prisma db seed` → 前端 `npm run build` → dist 复制到 `backend/static/dist`
+5. 启动:`npm start`(Procfile)
+6. **域名**:阿里云 DNS `www` → CNAME `bianra-site.onrender.com`,`@` → A 记录 Render IP;Render 添加自定义域名自动签发 HTTPS
+
+> 重新部署:Render → Manual Deploy → Deploy latest commit(免费实例磁盘不持久,但图片存数据库不受影响)。
+
+---
+
+## 八、目录结构
 
 ```
 my_site/
 ├── site/
-│   ├── backend/     # Express 后端 (src/ + prisma/ + tests/)
-│   └── frontend/    # Vue 3 前端 (公开站 + 后台 SPA)
-├── render.yaml      # Render Blueprint 部署配置
-├── PROJECT_PLAN.md  # 项目设计文档
-├── FIX_PLAN.md      # 修复方案
-└── PROGRESS_REPORT.md
+│   ├── backend/                  # Express 后端
+│   │   ├── src/
+│   │   │   ├── server.js/app.js/config.js/db.js
+│   │   │   ├── routes/           # public.js(公开) + admin.js(后台+登录)
+│   │   │   ├── services/         # article/profile/auth/file/rss
+│   │   │   └── middleware/       # requireAdmin + upload
+│   │   ├── prisma/               # schema + migrations + seed
+│   │   ├── tests/                # 59 用例 (Vitest + supertest)
+│   │   └── static/               # robots.txt + 运行时 dist
+│   └── frontend/                 # Vue 3 前端
+│       ├── src/
+│       │   ├── views/            # 公开页 + admin/(后台 6 页)
+│       │   ├── components/       # ProfileCard/TopNavbar/FortuneCard/Toast/ConfirmDialog
+│       │   ├── stores/           # Pinia (profile/theme)
+│       │   ├── router/           # 路由 + 守卫
+│       │   ├── api/              # fetch 封装
+│       │   ├── utils/            # fortune/quotes/date
+│       │   ├── styles/           # tokens.css 设计令牌
+│       │   └── assets/fonts/     # 15 款本地字体
+│       └── index.html
+├── render.yaml                   # Render Blueprint 部署配置
+├── README.md                     # 本文档
+└── DEV_DIARY.md                  # 开发日记(从零到上线)
 ```
 
-## 本地开发
+---
 
-### 前置要求
+## 九、常用命令
 
-- Node.js 18+ (推荐 20/22)
-- 一个 Neon 免费库(https://neon.tech),拿到 PostgreSQL 连接串
-
-### 1. 后端
-
-```bash
-cd site/backend
-npm install
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env, 填入:
-#   DATABASE_URL = 你的 Neon 连接串
-#   SESSION_SECRET = 一段随机长串
-#   ADMIN_PASSWORD = (可选) 初始管理员密码
-
-# 初始化数据库 (建表 + 初始管理员 + Profile 单例)
-npx prisma migrate dev
-npm run prisma:seed
-
-# 启动后端 (http://localhost:3000)
-npm run dev
-```
-
-### 2. 前端
-
-```bash
-cd site/frontend
-npm install
-npm run dev   # http://localhost:5173 (Vite 代理 /api → localhost:3000)
-```
-
-浏览器访问 http://localhost:5173(公开站),http://localhost:5173/admin(后台)。
-
-### 3. 测试
-
-```bash
-cd site/backend
-npm test      # 51 个用例 (连接 Neon 的独立 test schema, 不污染开发数据)
-```
-
-## 部署(Render + Neon,方案 X 同源)
-
-1. **Neon**:创建项目,复制连接串
-2. **Render**:Dashboard → New → Blueprint → 选择本仓库(或 Web Service, rootDir 指向 `site/backend`)
-3. 配置环境变量:
-   - `DATABASE_URL` = Neon 连接串
-   - `SESSION_SECRET` = 随机长串
-   - `CORS_ORIGIN` = `https://bianra.com`(同源部署实际无跨域,可留默认)
-   - `SITE_URL` = `https://bianra.com`
-   - `ADMIN_PASSWORD` = 可选,初始管理员密码
-4. 构建命令(render.yaml 已配置):`npm ci && npx prisma migrate deploy && npx prisma db seed`
-5. 启动命令:`npm start`(Procfile)
-6. 首次部署后,控制台会打印初始管理员密码(若未设 ADMIN_PASSWORD)
-
-### 前端构建
-
-```bash
-cd site/frontend
-npm run build    # 产物 frontend/dist
-```
-
-生产模式(`NODE_ENV=production`)下后端会自动托管 `frontend/dist` 并提供 SPA history fallback。
-
-### 自定义域名
-
-Render 服务绑定域名后,在 DNS(Cloudflare)加 CNAME 指向 Render 分配的地址即可。
-
-## 常用命令
-
-| 命令 | 说明 |
+| 命令(backend 目录) | 说明 |
 |---|---|
-| `npm run dev`(backend) | 后端开发模式(自动重启) |
-| `npm run dev`(frontend) | 前端 Vite dev server |
-| `npm test`(backend) | 运行全部测试 |
+| `npm run dev` | 后端开发(自动重启) |
+| `npm start` | 生产启动 |
+| `npm test` | 全部测试 |
 | `npm run prisma:migrate` | 生成并应用迁移 |
 | `npm run prisma:seed` | 初始化管理员 + Profile |
-| `npm run prisma:studio` | Prisma Studio 可视化数据库 |
-| `npm run build`(frontend) | 构建前端产物 |
+| `npm run prisma:studio` | 可视化数据库 |
 
-## 功能
+| 命令(frontend 目录) | 说明 |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | 构建前端产物 |
 
-- 公开站:bianra 大字封面(滚动淡出)、文章流(分类/搜索/分页)、文章详情(Markdown)、每日抽卡、关于页、RSS
-- 后台:登录、仪表盘、文章管理(封面/摘要/分类/正文 + 图片上传 + 草稿)、设置(资料/头像/背景图/社交/改密码)
-- 固定深色模式;玻璃拟态设计令牌(tokens.css)
+---
+
+## 十、注意事项
+
+- **免费实例冷启动**:Render 免费实例约 15 分钟无流量休眠,首次访问需等几秒唤醒(建议 UptimeRobot 定时 ping `/health` 保活)
+- **生产密码**:上线务必用强密码(别用本地 `bianra123`)
+- **图片存储**:图片存数据库(Neon 免费档 0.5GB),大量传图注意空间
+- **备份**:Neon 自动备份保留 7 天;重要内容建议定期导出

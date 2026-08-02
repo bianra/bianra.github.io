@@ -3,6 +3,9 @@
  * 种子: 本地日期 + "|bianra-quote"
  * 同一天恒定, 次日自动变化
  */
+import { todayLocalStr, fnv1a } from './date.js'
+
+export { todayLocalStr } // re-export 保持旧引用兼容
 
 // ---------- 语录词库 ----------
 export const QUOTES = [
@@ -40,20 +43,6 @@ export const QUOTES = [
  * @param {string} dateStr YYYY-MM-DD (本地日期)
  */
 export function quoteOfDay(dateStr) {
-  // 轻量字符串哈希 (FNV-1a 简化版), 避免 import 循环依赖
-  let hash = 0x811c9dc5
   const key = `${dateStr}|bianra-quote`
-  for (let i = 0; i < key.length; i++) {
-    hash ^= key.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193) >>> 0
-  }
-  return QUOTES[hash % QUOTES.length]
-}
-
-/** 获取本地日期字符串 (YYYY-MM-DD) */
-export function todayLocalStr(d = new Date()) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return QUOTES[fnv1a(key) % QUOTES.length]
 }

@@ -1,4 +1,4 @@
-<script setup>
+<script>
 /**
  * 确认弹窗 ConfirmDialog
  * 用法 (Promise):
@@ -92,4 +92,8 @@ export function confirm({ title = '确认操作', message = '', okText = '确定
     s.show = true
   })
 }
+</script>
+
+<script setup>
+// 无模板组件: 纯 JS 服务 (confirm 导出在普通 <script> 中)
 </script>

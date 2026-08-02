@@ -26,6 +26,4 @@ export const config = {
   adminPassword: process.env.ADMIN_PASSWORD || '',
   // 站点地址 (RSS link / robots sitemap 用; 生产 https://bianra.com)
   siteUrl: process.env.SITE_URL || 'https://bianra.com',
-  // 上传文件落盘目录
-  uploadsDir: path.join(__dirname, '..', 'static', 'uploads'),
 }

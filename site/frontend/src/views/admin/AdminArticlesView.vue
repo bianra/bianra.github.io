@@ -3,6 +3,8 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { adminApi } from '../../api/index.js'
+import { confirm } from '../../components/ConfirmDialog.vue'
+import { toast } from '../../components/Toast.vue'
 
 const router = useRouter()
 const q = ref('')
@@ -42,26 +44,30 @@ function toggleAll() {
 }
 
 async function removeOne(a) {
-  if (!confirm(`确定删除文章「${a.title}」? 此操作不可恢复`)) return
+  const ok = await confirm({ title: '删除文章', message: `确定删除文章「${a.title}」? 此操作不可恢复`, okText: '确认删除' })
+  if (!ok) return
   acting.value = true
   try {
     await adminApi.deleteArticle(a.id)
     await load(curPage.value)
+    toast.success('已删除')
   } catch (e) {
-    alert(e.message || '删除失败')
+    toast.error(e.message || '删除失败')
   } finally { acting.value = false }
 }
 
 async function removeBatch() {
   const ids = [...selected.value]
   if (ids.length === 0) return
-  if (!confirm(`确定删除选中的 ${ids.length} 篇文章? 此操作不可恢复`)) return
+  const ok = await confirm({ title: '批量删除', message: `确定删除选中的 ${ids.length} 篇文章? 此操作不可恢复`, okText: '确认删除' })
+  if (!ok) return
   acting.value = true
   try {
     await adminApi.deleteArticles(ids)
     await load(curPage.value)
+    toast.success(`已删除 ${ids.length} 篇`)
   } catch (e) {
-    alert(e.message || '批量删除失败')
+    toast.error(e.message || '批量删除失败')
   } finally { acting.value = false }
 }
 

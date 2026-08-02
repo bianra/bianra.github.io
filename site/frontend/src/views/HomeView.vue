@@ -582,12 +582,6 @@ onBeforeUnmount(() => {
 .hero-down svg {
   animation: chevron-bob 1.6s ease-in-out infinite;
 }
-.hero-down-tip {
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
-  opacity: 0.7;
-}
 @keyframes chevron-bob {
   0%, 100% { transform: translateY(0); opacity: 0.7; }
   50%      { transform: translateY(6px); opacity: 1; }

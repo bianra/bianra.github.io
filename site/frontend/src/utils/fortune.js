@@ -3,6 +3,9 @@
  * 种子: identity + "|" + 本地日期 + "|bianra-tea"
  * 同一 identity 在同一天结果恒定, 次日自动变化
  */
+import { todayLocalStr, fnv1a } from './date.js'
+
+export { todayLocalStr, fnv1a } // re-export 保持旧引用兼容
 
 // ---------- 常量池 ----------
 export const YI_POOL = [
@@ -45,17 +48,6 @@ export const TEAS = [
 ]
 
 // ---------- 纯函数 ----------
-
-/** 32-bit FNV-1a 字符串哈希 → number */
-export function fnv1a(str) {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i)
-    // Math.imul 32 位无溢出乘法
-    hash = Math.imul(hash, 0x01000193) >>> 0
-  }
-  return hash >>> 0
-}
 
 /** mulberry32 确定性 PRNG */
 export function mulberry32(seed) {
@@ -118,14 +110,6 @@ export function rollFortune(identity, dateStr) {
     level: levelOf(luck),
     date: dateStr,
   }
-}
-
-/** 获取本地日期字符串 (YYYY-MM-DD) */
-export function todayLocalStr(d = new Date()) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }
 
 /** 获取或生成 identity (localStorage 永久) */

@@ -3,6 +3,7 @@
 import { onMounted, ref } from 'vue'
 import { adminApi } from '../../api/index.js'
 import { useProfileStore, ART_FONTS } from '../../stores/profile.js'
+import { toast } from '../../components/Toast.vue'
 
 // 字体选项列表 (供选择器渲染)
 const fontOptions = Object.entries(ART_FONTS).map(([key, v]) => ({ key, label: v.label, font: v.font }))
@@ -51,7 +52,7 @@ async function onPickAvatar(e) {
   if (!file) return
   uploadingAvatar.value = true
   try { const { url } = await adminApi.upload(file); avatarUrl.value = url }
-  catch (er) { alert(er.message || '头像上传失败') }
+  catch (er) { toast.error(er.message || '头像上传失败') }
   finally { uploadingAvatar.value = false }
 }
 
@@ -61,12 +62,12 @@ async function onPickBg(e) {
   e.target.value = ''
   if (!file) return
   try { const { url } = await adminApi.upload(file); bgUrl.value = url }
-  catch (er) { alert(er.message || '背景图上传失败') }
+  catch (er) { toast.error(er.message || '背景图上传失败') }
 }
 
 /* ===== 社交链接动态增删 (最多 5 条) ===== */
 function addSocial() {
-  if (social.value.length >= 5) { alert('最多 5 条社交链接'); return }
+  if (social.value.length >= 5) { toast.warn('最多 5 条社交链接'); return }
   social.value.push({ label: '', url: '' })
 }
 function removeSocial(i) { social.value.splice(i, 1) }

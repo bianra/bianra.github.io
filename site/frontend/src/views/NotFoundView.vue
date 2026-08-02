@@ -13,11 +13,10 @@ import { RouterLink } from 'vue-router'
 
         <div class="nf-actions">
           <RouterLink to="/" class="nf-btn primary">← 回到主页</RouterLink>
-          <RouterLink to="/archive" class="nf-btn">📦 查看归档</RouterLink>
           <RouterLink to="/fortune" class="nf-btn">🍵 抽签转移心情</RouterLink>
         </div>
 
-        <div class="nf-tip">💡 也许文章已经归档，点击上方「查看归档」找找看？</div>
+        <div class="nf-tip">💡 试试从主页的文章列表或侧栏分类找找看？</div>
       </div>
     </div>
   </div>

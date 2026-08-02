@@ -102,15 +102,6 @@ export async function getCategoryCounts() {
   return counts
 }
 
-// 归档用: 取较多条目 (按时间倒序, 不含 content)
-export async function listAllForArchive(limit = 100) {
-  return prisma.article.findMany({
-    select: LIST_SELECT,
-    orderBy: { createdAt: 'desc' },
-    take: Math.min(500, Math.max(1, Number(limit) || 100)),
-  })
-}
-
 // ===== 后台 API 用 =====
 
 // 后台列表 (标题模糊搜索 + 分页, 不含 content)
@@ -131,6 +122,16 @@ export async function listArticlesAdmin(query = {}) {
     items: items.map((a) => ({ ...a, tags: parseTags(a.tags) })),
     total, page, pages: Math.ceil(total / limit) || 0,
   }
+}
+
+// 文章输入校验: 返回 { error } 或 null (通过)
+export function validateArticleInput({ title, summary, content }) {
+  const t = String(title || '').trim()
+  if (!t) return { error: '标题不能为空' }
+  if (t.length > 100) return { error: '标题不能超过 100 字' }
+  if (summary && String(summary).length > 200) return { error: '摘要不能超过 200 字' }
+  if (content && content.length > 100 * 1024) return { error: '正文过大 (≤100KB)' }
+  return null
 }
 
 // 新建文章
