@@ -18,6 +18,7 @@ const CATS = [
   { value: 'diary', label: '日记' },
   { value: 'study', label: '学习' },
   { value: 'code',  label: '代码' },
+  { value: 'chat',  label: '闲谈' },
 ]
 const saving = ref(false)
 const loading = ref(isEdit)

@@ -83,6 +83,14 @@ describe('公开 API', () => {
       expect(res.body.total).toBe(1)
     })
 
+    it('新增闲谈分类可筛选', async () => {
+      await createArticle({ title: '闲聊一篇', category: 'chat' })
+      const res = await request(app).get('/api/articles?cat=chat')
+      expect(res.status).toBe(200)
+      expect(res.body.items).toHaveLength(1)
+      expect(res.body.items[0].category).toBe('chat')
+    })
+
     it('非法 cat 参数回退为全部', async () => {
       await createArticle({ title: '任意', category: 'diary' })
       const res = await request(app).get('/api/articles?cat=hacker')

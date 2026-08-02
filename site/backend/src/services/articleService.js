@@ -14,7 +14,7 @@ const LIST_SELECT = {
 }
 
 // 合法分类
-const VALID_CATS = ['diary', 'study', 'code']
+const VALID_CATS = ['diary', 'study', 'code', 'chat']
 
 // 解析 tags JSON → 数组 (非法/空 → [])
 function parseTags(tags) {
@@ -89,13 +89,13 @@ export async function getTagCloud() {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
-// 各分类文章数 (主页侧栏统计用): { diary, study, code }
+// 各分类文章数 (主页侧栏统计用): { diary, study, code, chat }
 export async function getCategoryCounts() {
   const groups = await prisma.article.groupBy({
     by: ['category'],
     _count: { _all: true },
   })
-  const counts = { diary: 0, study: 0, code: 0 }
+  const counts = { diary: 0, study: 0, code: 0, chat: 0 }
   for (const g of groups) {
     counts[g.category] = g._count._all
   }

@@ -9,17 +9,18 @@ const store = useProfileStore()
 const profile = computed(() => store.profile || {})
 
 // 分类文章数 (日记/学习/代码, 实时)
-const catCounts = ref({ diary: 0, study: 0, code: 0 })
+const catCounts = ref({ diary: 0, study: 0, code: 0, chat: 0 })
 const CATS = [
   { key: 'diary', label: '日记', to: '/?cat=diary' },
   { key: 'study', label: '学习', to: '/?cat=study' },
   { key: 'code', label: '代码', to: '/?cat=code' },
+  { key: 'chat', label: '闲谈', to: '/?cat=chat' },
 ]
 
 onMounted(async () => {
   try {
     const data = await publicApi.getCategoryCounts()
-    catCounts.value = { diary: 0, study: 0, code: 0, ...(data || {}) }
+    catCounts.value = { diary: 0, study: 0, code: 0, chat: 0, ...(data || {}) }
   } catch (_) { /* 后端未启动则保持 0 */ }
 })
 

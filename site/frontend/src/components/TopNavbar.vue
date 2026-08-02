@@ -74,6 +74,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
         <RouterLink to="/?cat=diary">日记</RouterLink>
         <RouterLink to="/?cat=study">学习</RouterLink>
         <RouterLink to="/?cat=code">代码</RouterLink>
+        <RouterLink to="/?cat=chat">闲谈</RouterLink>
       </nav>
       <div class="nav-right">
         <!-- 搜索容器: 图标按钮 + 向左展开的输入框 -->

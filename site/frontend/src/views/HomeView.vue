@@ -50,7 +50,7 @@ function startTypewriter() {
 }
 
 // 分类映射: cat 参数 → 中文标题
-const CAT_MAP = { diary: '日记', study: '学习', code: '代码' }
+const CAT_MAP = { diary: '日记', study: '学习', code: '代码', chat: '闲谈' }
 const currentCat = ref('')  // 当前分类 (空 = 全部)
 
 // 当前激活的分类 (空 = 首页/全部), 用于侧边导航高亮
@@ -464,6 +464,16 @@ onBeforeUnmount(() => {
                 </svg>
               </span>
               代码
+            </a>
+            <a href="/?cat=chat" class="side-nav-item" :class="{ active: activeCat === 'chat' }" @click.prevent="goCat('chat')">
+              <span class="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </span>
+              闲谈
             </a>
           </nav>
           <ProfileCard />
