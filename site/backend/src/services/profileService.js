@@ -56,7 +56,11 @@ export async function updateProfile(data) {
   }
   if (data.artFont !== undefined) {
     // 字体白名单: 仅允许前端字体库中存在的标识
-    const VALID_FONTS = ['lobster', 'great-vibes', 'pacifico', 'dancing-script', 'caveat']
+    const VALID_FONTS = [
+      'lobster', 'great-vibes', 'pacifico', 'dancing-script', 'caveat',
+      'bebas-neue', 'anton', 'orbitron', 'playfair', 'cinzel',
+      'press-start', 'bangers', 'special-elite', 'pirata-one', 'bungee',
+    ]
     if (!VALID_FONTS.includes(String(data.artFont))) {
       const err = new Error('不支持的字体')
       err.status = 400
