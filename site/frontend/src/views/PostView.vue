@@ -14,6 +14,17 @@ const md = createMd()
 
 const routeId = computed(() => route.params?.id ?? '')
 
+// 分类中文映射 (与主页一致)
+const CAT_MAP = { study: '学习', code: '代码', chat: '闲谈' }
+
+// 字数统计 (参考站格式: xx 字)
+const wordCount = computed(() => {
+  const content = article.value?.content || ''
+  const cn = (content.match(/[\u4e00-\u9fa5]/g) || []).length
+  const en = (content.match(/[A-Za-z0-9]+/g) || []).length
+  return cn + en
+})
+
 // 阅读时长: 中文 ~400字/分钟, 英文 ~200词/分钟
 const readMinutes = computed(() => {
   const content = article.value?.content || ''
@@ -94,21 +105,26 @@ watch(routeId, (id) => id && loadArticle(id))
       </div>
 
       <article v-else class="post-article">
-        <!-- 标题 + meta -->
+        <!-- 标题 + meta (Argon 风格: 日期 | 分类 | 字数 | 时长) -->
         <header class="post-header">
           <h1 class="post-title">{{ article.title }}</h1>
           <div class="post-meta">
-            <span class="meta-chip">📅 {{ createdAtStr }}</span>
-            <span class="meta-chip">📖 {{ readMinutes }} 分钟阅读</span>
-            <span v-if="article.summary" class="meta-chip" style="max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="article.summary">📌 {{ article.summary }}</span>
+            <span>{{ createdAtStr }}</span>
+            <span class="meta-sep">|</span>
+            <span>{{ CAT_MAP[article.category] || '学习' }}</span>
+            <span class="meta-sep">|</span>
+            <span>{{ wordCount }} 字</span>
+            <span class="meta-sep">|</span>
+            <span>{{ readMinutes }} 分钟</span>
+            <template v-if="article.tags && article.tags.length">
+              <span class="meta-sep">|</span>
+              <span v-for="t in article.tags" :key="t" class="meta-tag">#{{ t }}</span>
+            </template>
           </div>
         </header>
 
-        <!-- Markdown 正文 -->
-        <div
-          class="post-body light-card"
-          v-html="html"
-        ></div>
+        <!-- Markdown 正文 (无卡片包裹, 全宽居中) -->
+        <div class="post-body" v-html="html"></div>
 
         <div class="post-footer">
           <RouterLink to="/" class="back-btn">← 返回首页</RouterLink>
@@ -187,11 +203,11 @@ watch(routeId, (id) => id && loadArticle(id))
   gap: 20px;
   color: #fff;
 }
-.post-header { margin-bottom: 4px; }
+.post-header { margin-bottom: 24px; }
 .post-title {
   font-size: clamp(26px, 4vw, 38px);
   line-height: 1.35;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-weight: 700;
   color: #fff;
   letter-spacing: 0.01em;
@@ -199,24 +215,18 @@ watch(routeId, (id) => id && loadArticle(id))
 .post-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(238, 230, 255, 0.55);
 }
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  font-size: 12px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(238, 230, 255, 0.82);
-  border: 1px solid rgba(255,255,255,0.1);
+.meta-sep { color: rgba(238, 230, 255, 0.25); }
+.meta-tag {
+  color: rgba(var(--accent-rgb), 0.85);
 }
 
-/* Markdown 正文 (深色磨砂) */
+/* Markdown 正文 (无卡片包裹, 参考 Argon 全宽阅读) */
 .post-body {
-  padding: 40px 44px;
   font-size: 16px;
   line-height: 1.85;
   color: rgba(240, 234, 255, 0.92);

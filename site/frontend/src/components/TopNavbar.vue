@@ -70,37 +70,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
         <span class="logo-bian">bian</span><span class="logo-ra">ra</span>
       </RouterLink>
       <nav class="nav-links" aria-label="主导航">
-        <RouterLink to="/" class="nav-item" active-class="nav-active">
-          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-          <span>首页</span>
-        </RouterLink>
-        <RouterLink to="/?cat=study" class="nav-item" active-class="nav-active">
-          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-          </svg>
-          <span>学习</span>
-        </RouterLink>
-        <RouterLink to="/?cat=code" class="nav-item" active-class="nav-active">
-          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="16 18 22 12 16 6"></polyline>
-            <polyline points="8 6 2 12 8 18"></polyline>
-          </svg>
-          <span>代码</span>
-        </RouterLink>
-        <RouterLink to="/?cat=chat" class="nav-item" active-class="nav-active">
-          <svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <span>闲谈</span>
-        </RouterLink>
+        <RouterLink to="/" class="nav-item" active-class="nav-active">首页</RouterLink>
+        <RouterLink to="/?cat=study" class="nav-item" active-class="nav-active">学习</RouterLink>
+        <RouterLink to="/?cat=code" class="nav-item" active-class="nav-active">代码</RouterLink>
+        <RouterLink to="/?cat=chat" class="nav-item" active-class="nav-active">闲谈</RouterLink>
       </nav>
       <div class="nav-right">
         <!-- 搜索容器: 图标按钮 + 向左展开的输入框 -->
@@ -195,38 +168,49 @@ html.ks-dark .top-navbar {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
   justify-content: center;
 }
 .nav-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  color: var(--ink-2);
+  display: inline-block;
+  padding: 6px 10px;
+  color: rgba(238, 230, 255, 0.68);
   font-size: var(--fs-sm);
-  font-weight: 500;
-  transition: all var(--transition);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  transition: color var(--transition), opacity var(--transition);
+  position: relative;
 }
-.nav-ico {
-  color: inherit;
-  opacity: 0.75;
-  transition: opacity var(--transition);
+.nav-item::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+  transition: width var(--transition), left var(--transition);
 }
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink);
-}
-.nav-item:hover .nav-ico { opacity: 1; }
-/* 当前激活导航 (与侧边导航 active 一致) */
-.nav-active,
-.nav-active:hover {
-  background: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
-.nav-active .nav-ico { opacity: 1; }
+.nav-item:hover::after {
+  width: 60%;
+  left: 20%;
+}
+/* 当前激活导航 */
+.nav-active,
+.nav-active:hover {
+  color: #fff;
+  font-weight: 500;
+}
+.nav-active::after,
+.nav-active:hover::after {
+  width: 60%;
+  left: 20%;
+}
 
 .nav-right {
   display: flex;
@@ -287,7 +271,7 @@ html.ks-dark .top-navbar {
 
 @media (max-width: 768px) {
   .nav-links {
-    gap: 2px;
+    gap: 0;
     flex: none;
     order: 3;
     width: 100%;
@@ -298,7 +282,7 @@ html.ks-dark .top-navbar {
   }
   .nav-links::-webkit-scrollbar { display: none; }
   .nav-item {
-    padding: 6px 10px;
+    padding: 6px 12px;
     white-space: nowrap;
     font-size: 13px;
   }
