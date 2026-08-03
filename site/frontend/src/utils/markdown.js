@@ -5,11 +5,13 @@
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js/lib/common'
 import container from 'markdown-it-container'
+import DOMPurify from 'dompurify'
 
-// 创建 markdown-it 实例 (html:false 防 XSS)
+// 创建 markdown-it 实例
+// html:true 以支持富文本编辑器导出的图片尺寸 HTML, 渲染后必须过 sanitizeHtml 消毒防 XSS
 export function createMd() {
   const md = new MarkdownIt({
-    html: false,
+    html: true,
     linkify: true,
     breaks: true,
     highlight(str, lang) {
@@ -100,4 +102,26 @@ export function enhanceRendered(el) {
     // 默认收起
     box.classList.add('collapsed')
   })
+}
+
+/**
+ * 渲染结果消毒 (XSS 防护)
+ * markdown-it html:true 允许了 HTML, 渲染前必须过 DOMPurify
+ * 白名单: 基本排版标签 + 图片(含 style 尺寸), 剥离 script/iframe/事件属性
+ */
+export function sanitizeHtml(html) {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'em', 's', 'u', 'del', 'code', 'pre', 'blockquote',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img',
+      'hr', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style', 'class', 'align'],
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|data:image\/[a-z+]+);?|#|\/)/i,
+  })
+}
+
+/** 渲染 Markdown → 消毒后 HTML (统一入口) */
+export function renderMd(markdown) {
+  return sanitizeHtml(createMd().render(markdown || ''))
 }

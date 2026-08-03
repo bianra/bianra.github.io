@@ -1,11 +1,12 @@
 <script setup>
-// 新建/编辑文章: 双栏编辑器 + 工具栏 + 实时预览 + 图片上传 + 自动草稿
-import { onMounted, onUnmounted, ref, computed, nextTick, watch } from 'vue'
+// 新建/编辑文章: 富文本编辑器(TipTap) + 图片上传 + 自动草稿
+import { onMounted, onUnmounted, ref, computed, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { adminApi, publicApi } from '../../api/index.js'
 import { confirm } from '../../components/ConfirmDialog.vue'
 import { toast } from '../../components/Toast.vue'
-import { createMd, enhanceRendered } from '../../utils/markdown.js'
+// 富文本编辑器懒加载 (TipTap 体积大, 仅编辑页需要)
+const MdEditor = defineAsyncComponent(() => import('../../components/MdEditor.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -24,30 +25,14 @@ const CATS = [
 const saving = ref(false)
 const loading = ref(isEdit)
 const err = ref('')
-const uploading = ref(false)      // 正文插图上传中
-
-const editorRef = ref(null)       // textarea ref
-const previewRef = ref(null)      // 预览区 ref (增强渲染用)
-const imgInputRef = ref(null)     // 正文图片 file input
-
-// markdown-it 实例 (统一配置: 小框/代码高亮, 禁原始 html 防 XSS)
-const md = createMd()
-const preview = computed(() => md.render(content.value || '*预览区: 开始写作后这里会实时显示渲染效果*'))
-
-// 预览内容变化后增强渲染 (代码复制按钮 + 折叠框)
-// 防抖: 快速输入时避免频繁 DOM 遍历; try/catch 防止渲染异常中断
-let enhanceTimer = 0
-watch(preview, () => {
-  clearTimeout(enhanceTimer)
-  enhanceTimer = setTimeout(async () => {
-    try {
-      await nextTick()
-      enhanceRendered(previewRef.value)
-    } catch (_) { /* 渲染增强失败不影响编辑 */ }
-  }, 120)
-})
 
 const wordCount = computed(() => content.value.length)
+
+// 图片上传 (传给 MdEditor, 复用 /admin/api/upload)
+async function uploadImage(file) {
+  const { url } = await adminApi.upload(file)
+  return { url }
+}
 
 /* ===== 草稿 (localStorage, 每 30s 自动存; 新建页/编辑页独立 key) ===== */
 const DRAFT_KEY = isEdit ? `article_draft_${route.params.id}` : 'article_draft_new'
@@ -65,59 +50,6 @@ function readDraft() {
   try { const raw = localStorage.getItem(DRAFT_KEY); return raw ? JSON.parse(raw) : null } catch { return null }
 }
 function clearDraft() { localStorage.removeItem(DRAFT_KEY) }
-
-/* ===== 工具栏: 选区操作 ===== */
-function applyFormat(type) {
-  const ta = editorRef.value
-  if (!ta) return
-  const s = ta.selectionStart, e = ta.selectionEnd
-  const val = ta.value
-  const sel = val.slice(s, e)
-  let insert = '', caretStart = s, caretEnd = s
-  switch (type) {
-    case 'bold':  insert = `**${sel || '粗体'}**`; caretStart = s + 2; caretEnd = s + 2 + (sel || '粗体').length; break
-    case 'italic':insert = `*${sel || '斜体'}*`;  caretStart = s + 1; caretEnd = s + 1 + (sel || '斜体').length; break
-    case 'h2':    insert = `## ${sel || '标题'}`;  caretStart = caretEnd = s + insert.length; break
-    case 'link':  insert = `[${sel || '链接文字'}](https://)`; caretStart = s + (sel ? 1 : 1); caretEnd = s + (sel || '链接文字').length + 1; break
-    case 'ul':    insert = `- ${sel || '列表项'}`; caretStart = caretEnd = s + insert.length; break
-    // ===== 小框 =====
-    case 'code': {
-      const lang = sel ? '' : 'js'
-      insert = `\n\`\`\`${lang}\n${sel || '// 在这里写代码'}\n\`\`\`\n`
-      caretStart = s + insert.indexOf(sel || '// ') + (sel ? 0 : 4)
-      caretEnd = caretStart + (sel || '').length
-      break
-    }
-    case 'tip':
-    case 'note':
-    case 'warning':
-    case 'danger':
-    case 'quote':
-    case 'details': {
-      insert = `\n:::${type} ${sel || '标题'}\n${sel || '在这里填写内容...'}\n:::\n`
-      caretStart = s + insert.indexOf('在这里填写内容')
-      caretEnd = caretStart + (sel || '在这里填写内容').length
-      break
-    }
-  }
-  content.value = val.slice(0, s) + insert + val.slice(e)
-  nextTick(() => { ta.focus(); ta.setSelectionRange(caretStart, caretEnd) })
-}
-
-/* ===== 图片上传 (正文插图) ===== */
-async function onPickImage(e) {
-  const file = e.target.files?.[0]
-  e.target.value = ''
-  if (!file) return
-  uploading.value = true
-  try {
-    const { url } = await adminApi.upload(file)
-    const ta = editorRef.value
-    const s = ta?.selectionStart ?? content.value.length
-    content.value = content.value.slice(0, s) + `\n![](${url})\n` + content.value.slice(s)
-  } catch (er) { toast.error(er.message || '图片上传失败') }
-  finally { uploading.value = false }
-}
 
 // 标签文本 → 数组 (按逗号/空格/中文逗号切分, 去空去重)
 function parseTagsInput(str) {
@@ -240,95 +172,12 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- 双栏编辑器 -->
+      <!-- 富文本编辑器 (TipTap: 所见即所得 + 图片拖拽) -->
       <div class="glass-panel" style="padding:0;overflow:hidden;">
-        <!-- 工具栏 -->
-        <div class="toolbar">
-          <button class="tool-btn" title="加粗" @click="applyFormat('bold')"><b>B</b></button>
-          <button class="tool-btn" title="斜体" @click="applyFormat('italic')"><i>I</i></button>
-          <button class="tool-btn" title="二级标题" @click="applyFormat('h2')">H2</button>
-          <button class="tool-btn" title="链接" @click="applyFormat('link')">🔗</button>
-          <button class="tool-btn" title="无序列表" @click="applyFormat('ul')">• 列表</button>
-          <span class="tool-sep" aria-hidden="true"></span>
-          <button class="tool-btn" title="代码框(高亮+复制)" @click="applyFormat('code')">⌨ 代码</button>
-          <button class="tool-btn callout-btn" title="提示框" @click="applyFormat('tip')">💡 提示</button>
-          <button class="tool-btn callout-btn" title="备注框" @click="applyFormat('note')">📝 备注</button>
-          <button class="tool-btn callout-btn" title="警告框" @click="applyFormat('warning')">⚠️ 警告</button>
-          <button class="tool-btn callout-btn" title="危险框" @click="applyFormat('danger')">🚫 危险</button>
-          <button class="tool-btn callout-btn" title="引用框" @click="applyFormat('quote')">💬 引用</button>
-          <button class="tool-btn callout-btn" title="折叠详情框" @click="applyFormat('details')">📂 折叠</button>
-          <button class="tool-btn" title="插入图片" :disabled="uploading" @click="imgInputRef?.click()">
-            {{ uploading ? '上传中...' : '🖼 图片' }}
-          </button>
-          <input ref="imgInputRef" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="onPickImage" style="display:none;" />
-          <span style="flex:1;"></span>
-          <span style="color:var(--ink-2);font-size:var(--fs-xs);">{{ wordCount }} 字</span>
-        </div>
-
-        <!-- 编辑 + 预览 -->
-        <div class="editor-grid">
-          <textarea
-            ref="editorRef"
-            v-model="content"
-            placeholder="# 开始写作...&#10;支持 Markdown 语法, 工具栏可快速排版; 图片按钮可上传插图并自动插入"
-            spellcheck="false"
-            class="editor-textarea"
-          ></textarea>
-          <div ref="previewRef" class="editor-preview md-body" v-html="preview"></div>
-        </div>
+        <MdEditor v-model="content" :uploader="uploadImage" />
       </div>
     </template>
   </div>
 </template>
 
-<style scoped>
-.toolbar {
-  display: flex; align-items: center; gap: 4px; padding: 8px 12px;
-  border-bottom: 1px solid var(--border); background: rgba(var(--accent-rgb), 0.04);
-  flex-wrap: wrap;
-}
-.tool-btn {
-  padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--panel-solid); color: var(--ink); cursor: pointer; font-size: var(--fs-sm);
-  transition: all var(--transition); white-space: nowrap;
-}
-.tool-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.tool-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-/* 小框按钮: 稍醒目 */
-.callout-btn { font-size: 12px; }
-.editor-grid {
-  display: grid; grid-template-columns: 1fr 1fr; min-height: 480px;
-}
-.editor-textarea {
-  padding: 16px; border: none; border-right: 1px solid var(--border);
-  background: var(--panel-solid); color: var(--ink);
-  font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-sm); line-height: 1.8;
-  resize: none; outline: none; width: 100%;
-}
-.editor-preview {
-  padding: 16px 20px; overflow-y: auto; max-height: 70vh; background: var(--bg);
-}
-/* 预览区 markdown 排版 */
-.md-body :deep(h1) { font-size: var(--fs-2xl); margin: 0.6em 0 0.4em; }
-.md-body :deep(h2) { font-size: var(--fs-xl); margin: 0.6em 0 0.4em; }
-.md-body :deep(h3) { font-size: var(--fs-lg); margin: 0.5em 0 0.3em; }
-.md-body :deep(p) { margin: 0.6em 0; line-height: 1.8; }
-.md-body :deep(ul), .md-body :deep(ol) { padding-left: 1.5em; margin: 0.6em 0; }
-.md-body :deep(li) { margin: 0.2em 0; }
-.md-body :deep(img) { max-width: 100%; border-radius: 8px; margin: 0.8em 0; }
-.md-body :deep(code) { background: rgba(var(--accent-rgb),0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-.md-body :deep(pre) { background: rgba(0,0,0,0.06); padding: 12px; border-radius: 8px; overflow-x: auto; }
-.md-body :deep(blockquote) { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--ink-2); margin: 0.8em 0; }
-.md-body :deep(a) { color: var(--accent); }
-@media (max-width: 900px) {
-  .editor-grid { grid-template-columns: 1fr; }
-  .editor-textarea { border-right: none; border-bottom: 1px solid var(--border); min-height: 300px; }
-}
-</style>
+

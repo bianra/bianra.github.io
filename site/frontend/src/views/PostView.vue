@@ -3,14 +3,13 @@
 import { onMounted, onBeforeUnmount, computed, ref, watch, nextTick } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { publicApi } from '../api/index.js'
-import { createMd, enhanceRendered } from '../utils/markdown.js'
+import { enhanceRendered, renderMd } from '../utils/markdown.js'
 
 const route = useRoute()
 const article = ref(null)
 const loading = ref(true)
 const err = ref(null)
 const html = ref('')
-const md = createMd()
 
 const routeId = computed(() => route.params?.id ?? '')
 
@@ -47,8 +46,8 @@ async function loadArticle(id) {
   try {
     const data = await publicApi.getArticle(id)
     article.value = data
-    // markdown-it 渲染 → v-html 注入 (html=false 已禁原生 HTML, 防 XSS)
-    html.value = md.render(typeof data.content === 'string' ? data.content : '')
+    // markdown-it 渲染 + DOMPurify 消毒 (支持富文本图片尺寸, 防 XSS)
+    html.value = renderMd(typeof data.content === 'string' ? data.content : '')
   } catch (e) {
     err.value = e || new Error('文章不存在')
   } finally {
