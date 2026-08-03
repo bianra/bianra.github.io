@@ -139,11 +139,7 @@ watch(routeId, (id) => id && loadArticle(id))
   min-height: 100vh;
   width: 100%;
   padding: 96px 0 96px;
-  background:
-    radial-gradient(ellipse 70% 50% at 20% 15%, #3a1e72 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(150, 50, 200, 0.45) 0%, transparent 60%),
-    linear-gradient(160deg, #2a1454 0%, #12072b 45%, #0a0516 100%);
-  background-attachment: fixed;
+  /* 背景透出全站 body 背景图 (--bg-image), 与主页保持一致 */
 }
 
 .post-container {

@@ -9,16 +9,14 @@ import { publicApi } from '../api/index.js'
 import { quoteOfDay, todayLocalStr } from '../utils/quotes.js'
 import ProfileCard from '../components/ProfileCard.vue'
 import FortuneCard from '../components/FortuneCard.vue'
-import ArticleDialog from '../components/ArticleDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const profileStore = useProfileStore()
 
-// 文章悬浮框
-const dialogArticleId = ref(null)
+// 点击文章 → 整页跳转详情页 (保持全站背景图不变)
 function openArticle(id) {
-  dialogArticleId.value = id
+  router.push(`/post/${id}`)
 }
 const articles = ref([])
 const loading = ref(true)
@@ -494,9 +492,6 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
-
-    <!-- 文章悬浮框 (点击文章弹出, 背景不变) -->
-    <ArticleDialog :article-id="dialogArticleId" @close="dialogArticleId = null" />
   </div>
 </template>
 
