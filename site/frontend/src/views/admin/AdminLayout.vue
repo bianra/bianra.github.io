@@ -10,6 +10,7 @@ const route = useRoute()
 
 const nav = [
   { name: 'admin-dashboard', label: '仪表盘', icon: '📊' },
+  { name: 'admin-agent', label: '知识 Agent', icon: '🤖' },
   { name: 'admin-articles', label: '文章管理', icon: '📝' },
   { name: 'admin-settings', label: '设置', icon: '⚙️' },
 ]
@@ -56,13 +57,16 @@ async function doLogout() {
     </aside>
 
     <!-- 主内容 -->
-    <main class="admin-main" style="flex:1;padding:20px 20px 20px 0;">
+    <main class="admin-main" style="flex:1;padding:20px 20px 0 0;">
       <RouterView v-slot="{ Component, route }">
         <div v-if="auth.checking" class="glass-panel" style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-2);min-height:70vh;">
           加载中...
         </div>
         <component v-else :is="Component" :key="route.fullPath" class="page-enter" />
       </RouterView>
+      <footer style="padding:14px 0 18px;color:var(--ink-2);font-size:12px;text-align:center;">
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">陕ICP备2026020676号</a>
+      </footer>
     </main>
   </div>
 </template>

@@ -165,3 +165,73 @@ adminRouter.put('/settings/password', async (req, res, next) => {
     res.status(e.status || 500).json({ error: e.message })
   }
 })
+
+// ===== 知识 Agent(对话 / 审核台) =====
+// 浏览器不直连知识 Agent(:8787), 经后端同机转发, 避免暴露内网端口
+const AGENT_BASE = process.env.AGENT_BASE_URL || 'http://127.0.0.1:8787/v1'
+const AGENT_TOKEN = process.env.AGENT_AUTH_TOKEN || ''
+
+async function proxyAgent(req, res, method, agentPath, body) {
+  try {
+    const headers = { 'Content-Type': 'application/json' }
+    if (AGENT_TOKEN) headers['X-API-Token'] = AGENT_TOKEN
+    const r = await fetch(`${AGENT_BASE}${agentPath}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(120000), // LLM 生成可能较慢
+    })
+    const data = await r.json()
+    res.status(r.ok ? 200 : 502).json(data)
+  } catch (e) {
+    res.status(502).json({ ok: false, reason: '知识 Agent 未运行: ' + (e.message || e) })
+  }
+}
+
+// 草稿列表(按状态过滤)
+adminRouter.get('/agent/drafts', requireAdmin, (req, res) => {
+  const status = req.query.status ? `?status=${encodeURIComponent(req.query.status)}` : ''
+  proxyAgent(req, res, 'GET', `/drafts${status}`)
+})
+
+// 草稿详情(含正文)
+adminRouter.get('/agent/draft/:id', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'GET', `/draft/${req.params.id}`)
+})
+
+// 检索问答
+adminRouter.get('/agent/ask', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'GET', `/ask?query=${encodeURIComponent(req.query.query || '')}`)
+})
+
+// 审核动作: 意见 / 通过 / 驳回 / 入库
+adminRouter.post('/agent/feedback', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/feedback`, { opinion: req.body.opinion })
+})
+adminRouter.post('/agent/approve', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/approve`)
+})
+adminRouter.post('/agent/reject', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/reject`)
+})
+adminRouter.post('/agent/publish', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/publish`)
+})
+
+// 触发总结(日志→草稿)
+adminRouter.get('/agent/notes', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'GET', '/notes')
+})
+adminRouter.post('/agent/merge', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', '/merge', { note_ids: req.body.note_ids, topics: req.body.topics })
+})
+adminRouter.post('/agent/tree', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', '/tree', { note_ids: req.body.note_ids, topics: req.body.topics })
+})
+adminRouter.post('/agent/summarize', requireAdmin, (req, res) => {
+  proxyAgent(req, res, 'POST', '/summarize', {
+    topic: req.body.topic || '',
+    limit: req.body.limit || 20,
+    text: req.body.text || undefined,
+  })
+})
