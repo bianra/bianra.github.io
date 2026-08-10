@@ -46,7 +46,8 @@ export function createApp() {
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: config.isProd,
+      // 生产默认要求 HTTPS;本地 HTTP 隧道体验时可设 COOKIE_SECURE=false
+      secure: process.env.COOKIE_SECURE !== undefined ? process.env.COOKIE_SECURE === 'true' : config.isProd,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
     },
   }))

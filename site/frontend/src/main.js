@@ -32,3 +32,10 @@ window.addEventListener('api:401', () => {
 })
 
 app.mount('#app')
+
+// PWA: 注册 Service Worker(生产环境)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => { /* 静默失败, 不影响使用 */ })
+  })
+}

@@ -492,6 +492,9 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
+    <footer style="padding:20px 0 28px;color:var(--muted,#888);font-size:12px;text-align:center;">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">陕ICP备2026020676号</a>
+    </footer>
   </div>
 </template>
 
