@@ -1,8 +1,12 @@
 <script setup>
-// 迷你每日抽签 (左侧栏): 复用 fortune.js 纯函数, 点击抖动翻面看幸运值+宜忌
+// 左侧栏双标签: 抽签(迷你每日抽签, 复用 fortune.js 纯函数) | 贪吃蛇(入口)
+// 标签样式对齐顶部导航 nav-item: 极简文字链接 + 下划线 hover/激活
 import { ref, computed } from 'vue'
 import { getIdentity, todayLocalStr, rollFortune } from '../utils/fortune.js'
 
+const activeTab = ref('fortune') // 'fortune' | 'snake'
+
+// ===== 抽签 =====
 const today = todayLocalStr()
 const identity = getIdentity()
 const phase = ref('idle') // idle | shaking | revealed
@@ -29,49 +33,114 @@ const dateLabel = computed(() => today.slice(5)) // MM-DD
 
 <template>
   <div class="fortune-mini light-card">
-    <div class="mini-head">
-      <span class="mini-title">🍵 每日抽签</span>
-      <span class="mini-date">{{ dateLabel }}</span>
-    </div>
+    <!-- 双标签栏: 抽签 / 贪吃蛇 -->
+    <nav class="mini-tabs" aria-label="侧栏小游戏">
+      <button
+        class="mini-tab"
+        :class="{ active: activeTab === 'fortune' }"
+        @click="activeTab = 'fortune'"
+      >抽签</button>
+      <button
+        class="mini-tab"
+        :class="{ active: activeTab === 'snake' }"
+        @click="activeTab = 'snake'"
+      >贪吃蛇</button>
+    </nav>
 
-    <div class="mini-card-wrap">
-      <!-- 卡背 -->
-      <div
-        v-if="phase === 'idle' || phase === 'shaking'"
-        class="mini-card mini-back"
-        :class="{ shake: phase === 'shaking' }"
-        @click="doRoll"
-      >
-        <div class="mini-hint">{{ phase === 'shaking' ? '抽取中…' : '点击抽今日运势' }}</div>
+    <!-- ===== 抽签 tab: 迷你抽签卡 ===== -->
+    <template v-if="activeTab === 'fortune'">
+      <div class="mini-head">
+        <span class="mini-title">🍵 每日抽签</span>
+        <span class="mini-date">{{ dateLabel }}</span>
       </div>
 
-      <!-- 卡正面 -->
-      <transition name="mini-flip" mode="out-in">
-        <div v-if="phase === 'revealed'" class="mini-card mini-front" :key="'mini-' + today">
-          <div class="mini-level" :class="levelCls">{{ result.level }}</div>
-          <div class="mini-luck-row">
-            <span class="mini-luck-num" :style="{ color: result.color.hex }">{{ result.luck }}</span>
-            <span class="mini-luck-label">幸运值</span>
-          </div>
-          <div class="mini-yiji">
-            <div class="mini-yi"><span class="yj-tag">宜</span><span class="yj-val">{{ result.yi }}</span></div>
-            <div class="mini-ji"><span class="yj-tag">忌</span><span class="yj-val">{{ result.ji }}</span></div>
-          </div>
-          <RouterLink to="/fortune" class="mini-more">查看完整运势 →</RouterLink>
+      <div class="mini-card-wrap">
+        <!-- 卡背 -->
+        <div
+          v-if="phase === 'idle' || phase === 'shaking'"
+          class="mini-card mini-back"
+          :class="{ shake: phase === 'shaking' }"
+          @click="doRoll"
+        >
+          <div class="mini-hint">{{ phase === 'shaking' ? '抽取中…' : '点击抽今日运势' }}</div>
         </div>
-      </transition>
-    </div>
+
+        <!-- 卡正面 -->
+        <transition name="mini-flip" mode="out-in">
+          <div v-if="phase === 'revealed'" class="mini-card mini-front" :key="'mini-' + today">
+            <div class="mini-level" :class="levelCls">{{ result.level }}</div>
+            <div class="mini-luck-row">
+              <span class="mini-luck-num" :style="{ color: result.color.hex }">{{ result.luck }}</span>
+              <span class="mini-luck-label">幸运值</span>
+            </div>
+            <div class="mini-yiji">
+              <div class="mini-yi"><span class="yj-tag">宜</span><span class="yj-val">{{ result.yi }}</span></div>
+              <div class="mini-ji"><span class="yj-tag">忌</span><span class="yj-val">{{ result.ji }}</span></div>
+            </div>
+            <RouterLink to="/fortune" class="mini-more">查看完整运势 →</RouterLink>
+          </div>
+        </transition>
+      </div>
+    </template>
+
+    <!-- ===== 贪吃蛇 tab: 迷你入口 ===== -->
+    <template v-else>
+      <div class="mini-head">
+        <span class="mini-title">🐍 贪吃蛇</span>
+        <span class="mini-date">经典小游戏</span>
+      </div>
+      <div class="snake-entry">
+        <p class="snake-desc">吃豆子变长, 别撞墙、别咬到自己</p>
+        <RouterLink to="/snake" class="snake-play">开始游戏 →</RouterLink>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .fortune-mini {
-  padding: 16px 18px;
+  padding: 14px 18px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* ---- 双标签栏(对齐顶部导航 nav-item 风格) ---- */
+.mini-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 2px;
+}
+.mini-tab {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  color: rgba(238, 230, 255, 0.68);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  position: relative;
+  transition: color var(--transition);
+}
+.mini-tab::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+  transition: width var(--transition), left var(--transition);
+}
+.mini-tab:hover { color: #fff; }
+.mini-tab:hover::after { width: 60%; left: 20%; }
+.mini-tab.active { color: #fff; font-weight: 500; }
+.mini-tab.active::after { width: 60%; left: 20%; }
+
+/* ---- 公共头部行 ---- */
 .mini-head {
   display: flex;
   justify-content: space-between;
@@ -89,7 +158,7 @@ const dateLabel = computed(() => today.slice(5)) // MM-DD
   letter-spacing: 0.12em;
 }
 
-/* 卡片容器 */
+/* ---- 抽签卡 ---- */
 .mini-card-wrap { perspective: 900px; }
 .mini-card {
   position: relative;
@@ -104,7 +173,7 @@ const dateLabel = computed(() => today.slice(5)) // MM-DD
   user-select: none;
 }
 
-/* ---- 卡背 ---- */
+/* 卡背 */
 .mini-back {
   cursor: pointer;
   background:
@@ -129,7 +198,7 @@ const dateLabel = computed(() => today.slice(5)) // MM-DD
   40%, 60% { transform: translate3d(0,  5px, 0) rotate(2deg); }
 }
 
-/* ---- 卡正面 ---- */
+/* 卡正面 */
 .mini-front {
   background: rgba(0, 0, 0, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -215,4 +284,42 @@ const dateLabel = computed(() => today.slice(5)) // MM-DD
 }
 .mini-flip-enter-from { transform: rotateY(-90deg); opacity: 0; }
 .mini-flip-leave-to   { transform: rotateY(90deg);  opacity: 0; }
+
+/* ---- 贪吃蛇入口 ---- */
+.snake-entry {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(52, 211, 153, 0.16), transparent 65%),
+    radial-gradient(circle at 70% 75%, rgba(255, 107, 157, 0.14), transparent 65%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.snake-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: rgba(220, 212, 240, 0.72);
+}
+.snake-play {
+  padding: 8px 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c6cf0, #4aa8ff);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 18px rgba(124, 108, 240, 0.35);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.snake-play:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124, 108, 240, 0.45);
+}
 </style>

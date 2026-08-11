@@ -6,6 +6,7 @@ const routes = [
   /* ===== 公开站 ===== */
   { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { type: 'public' } },
   { path: '/fortune', name: 'fortune', component: () => import('../views/FortuneView.vue'), meta: { type: 'public' } },
+  { path: '/snake', name: 'snake', component: () => import('../views/SnakeView.vue'), meta: { type: 'public' } },
   { path: '/post/:id', name: 'post', component: () => import('../views/PostView.vue'), meta: { type: 'public' }, props: true },
 
   /* ===== 后台 SPA ===== */
@@ -76,6 +77,7 @@ function buildTitle(to) {
   const map = {
     home: 'bianra 小屋',
     fortune: '每日抽签 · bianra 小屋',
+    snake: '贪吃蛇 · bianra 小屋',
     post: '文章 · bianra 小屋',
     'admin-dashboard': '仪表盘 · 后台',
     'admin-agent': '知识 Agent · 后台',
