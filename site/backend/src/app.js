@@ -45,12 +45,18 @@ async function createSessionStore() {
     return new session.MemoryStore()
   }
   try {
-    // 显式建表 (幂等), 再探测写读一次确认可用
+    // 显式建表 (幂等), 再探测 set→get→destroy 确认读写可用
     await sessionPool.query(SESSION_TABLE_SQL)
     const store = new PgSession({ pool: sessionPool, createTableIfMissing: false })
     const probeId = `probe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     await new Promise((resolve, reject) => {
       store.set(probeId, { ok: true }, (err) => (err ? reject(err) : resolve()))
+    })
+    await new Promise((resolve, reject) => {
+      store.get(probeId, (err, sess) => {
+        if (err || !sess || !sess.ok) reject(err || new Error('PG 会话存储探测读回失败'))
+        else resolve()
+      })
     })
     await new Promise((resolve) => store.destroy(probeId, () => resolve()))
     return store

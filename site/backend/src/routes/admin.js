@@ -128,6 +128,9 @@ adminRouter.delete('/articles', async (req, res, next) => {
     if (!Array.isArray(ids)) {
       return res.status(400).json({ error: 'ids 必须是数组' })
     }
+    if (ids.length > 100) {
+      return res.status(400).json({ error: '单次最多删除 100 篇' })
+    }
     const deleted = await deleteArticles(ids)
     res.json({ deleted })
   } catch (e) {
