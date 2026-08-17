@@ -6,9 +6,9 @@ const TIMEOUT_MS = 30000
 // 生产环境用同源(同部署域名), dev 走 vite proxy 到 localhost:3000
 const BASE_URL = '' // 空字符串 = 相对路径, 由 dev proxy 转发
 
-async function request(path, { method = 'GET', body, signal, multipart = false, auth = false } = {}) {
+async function request(path, { method = 'GET', body, signal, multipart = false, auth = false, timeout = TIMEOUT_MS } = {}) {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timer = setTimeout(() => controller.abort(), timeout)
   // 合并外部 signal
   const outer = signal || null
   if (outer) {
@@ -49,7 +49,8 @@ async function request(path, { method = 'GET', body, signal, multipart = false, 
 
     if (!res.ok) {
       const err = await parseMaybeJson(res)
-      const e = new Error(err?.error || `请求失败 (${res.status})`)
+      // 兼容后端/知识 Agent 代理的错误格式: { error } 或 { reason }
+      const e = new Error(err?.error || err?.reason || `请求失败 (${res.status})`)
       e.status = res.status
       throw e
     }
@@ -64,7 +65,7 @@ async function request(path, { method = 'GET', body, signal, multipart = false, 
     }
     throw e
   } finally {
-    clearTimeout(timeout)
+    clearTimeout(timer)
   }
 }
 
@@ -133,4 +134,27 @@ export const adminApi = {
       body: { oldPassword, newPassword },
       auth: true,
     }),
+
+  /* ===== 知识 Agent(经后端代理到本地服务; LLM 生成慢, 超时 120s) ===== */
+  agentSummarize: (data) =>
+    request('/admin/api/agent/summarize', { method: 'POST', body: data, auth: true, timeout: 120000 }),
+  agentDrafts: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return request(`/admin/api/agent/drafts${q ? '?' + q : ''}`, { auth: true, timeout: 120000 })
+  },
+  agentDraft: (id) => request(`/admin/api/agent/draft/${id}`, { auth: true, timeout: 120000 }),
+  agentAsk: (query) => request(`/admin/api/agent/ask?query=${encodeURIComponent(query)}`, { auth: true, timeout: 120000 }),
+  agentFeedback: (draftId, opinion) =>
+    request('/admin/api/agent/feedback', { method: 'POST', body: { draft_id: draftId, opinion }, auth: true, timeout: 120000 }),
+  agentApprove: (draftId) =>
+    request('/admin/api/agent/approve', { method: 'POST', body: { draft_id: draftId }, auth: true, timeout: 120000 }),
+  agentReject: (draftId) =>
+    request('/admin/api/agent/reject', { method: 'POST', body: { draft_id: draftId }, auth: true, timeout: 120000 }),
+  agentPublish: (draftId) =>
+    request('/admin/api/agent/publish', { method: 'POST', body: { draft_id: draftId }, auth: true, timeout: 120000 }),
+  agentNotes: () => request('/admin/api/agent/notes', { auth: true, timeout: 120000 }),
+  agentMerge: (noteIds) =>
+    request('/admin/api/agent/merge', { method: 'POST', body: { note_ids: noteIds }, auth: true, timeout: 120000 }),
+  agentTree: (noteIds) =>
+    request('/admin/api/agent/tree', { method: 'POST', body: { note_ids: noteIds }, auth: true, timeout: 120000 }),
 }

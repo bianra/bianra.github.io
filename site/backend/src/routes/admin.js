@@ -1,6 +1,7 @@
 // 后台路由: /admin/api/*
 // login 无需鉴权; 其余接口经 requireAdmin 保护 (401 → { error: '未登录' })
 import { Router } from 'express'
+import { rateLimit } from 'express-rate-limit'
 
 import { requireAdmin } from '../middleware/requireAdmin.js'
 import { upload } from '../middleware/upload.js'
@@ -20,8 +21,18 @@ import { saveImage } from '../services/fileService.js'
 
 export const adminRouter = Router()
 
-// ===== 登录 (无需鉴权) =====
-adminRouter.post('/login', async (req, res, next) => {
+// ===== 登录 (无需鉴权, 但按 IP 限流防爆破) =====
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 分钟窗口
+  limit: 20,                // 每个 IP 最多 20 次尝试
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '尝试次数过多, 请 15 分钟后再试' },
+  // 测试环境跳过限流(集成测试大量登录), 生产/开发正常生效
+  skip: () => process.env.NODE_ENV === 'test',
+})
+
+adminRouter.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { username, password } = req.body || {}
     const result = await login(username, password)
@@ -189,46 +200,46 @@ async function proxyAgent(req, res, method, agentPath, body) {
 }
 
 // 草稿列表(按状态过滤)
-adminRouter.get('/agent/drafts', requireAdmin, (req, res) => {
+adminRouter.get('/agent/drafts', (req, res) => {
   const status = req.query.status ? `?status=${encodeURIComponent(req.query.status)}` : ''
   proxyAgent(req, res, 'GET', `/drafts${status}`)
 })
 
 // 草稿详情(含正文)
-adminRouter.get('/agent/draft/:id', requireAdmin, (req, res) => {
-  proxyAgent(req, res, 'GET', `/draft/${req.params.id}`)
+adminRouter.get('/agent/draft/:id', (req, res) => {
+  proxyAgent(req, res, 'GET', `/draft/${encodeURIComponent(req.params.id)}`)
 })
 
 // 检索问答
-adminRouter.get('/agent/ask', requireAdmin, (req, res) => {
+adminRouter.get('/agent/ask', (req, res) => {
   proxyAgent(req, res, 'GET', `/ask?query=${encodeURIComponent(req.query.query || '')}`)
 })
 
 // 审核动作: 意见 / 通过 / 驳回 / 入库
-adminRouter.post('/agent/feedback', requireAdmin, (req, res) => {
-  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/feedback`, { opinion: req.body.opinion })
+adminRouter.post('/agent/feedback', (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${encodeURIComponent(req.body.draft_id)}/feedback`, { opinion: req.body.opinion })
 })
-adminRouter.post('/agent/approve', requireAdmin, (req, res) => {
-  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/approve`)
+adminRouter.post('/agent/approve', (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${encodeURIComponent(req.body.draft_id)}/approve`)
 })
-adminRouter.post('/agent/reject', requireAdmin, (req, res) => {
-  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/reject`)
+adminRouter.post('/agent/reject', (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${encodeURIComponent(req.body.draft_id)}/reject`)
 })
-adminRouter.post('/agent/publish', requireAdmin, (req, res) => {
-  proxyAgent(req, res, 'POST', `/draft/${req.body.draft_id}/publish`)
+adminRouter.post('/agent/publish', (req, res) => {
+  proxyAgent(req, res, 'POST', `/draft/${encodeURIComponent(req.body.draft_id)}/publish`)
 })
 
 // 触发总结(日志→草稿)
-adminRouter.get('/agent/notes', requireAdmin, (req, res) => {
+adminRouter.get('/agent/notes', (req, res) => {
   proxyAgent(req, res, 'GET', '/notes')
 })
-adminRouter.post('/agent/merge', requireAdmin, (req, res) => {
+adminRouter.post('/agent/merge', (req, res) => {
   proxyAgent(req, res, 'POST', '/merge', { note_ids: req.body.note_ids, topics: req.body.topics })
 })
-adminRouter.post('/agent/tree', requireAdmin, (req, res) => {
+adminRouter.post('/agent/tree', (req, res) => {
   proxyAgent(req, res, 'POST', '/tree', { note_ids: req.body.note_ids, topics: req.body.topics })
 })
-adminRouter.post('/agent/summarize', requireAdmin, (req, res) => {
+adminRouter.post('/agent/summarize', (req, res) => {
   proxyAgent(req, res, 'POST', '/summarize', {
     topic: req.body.topic || '',
     limit: req.body.limit || 20,

@@ -175,9 +175,10 @@ export async function deleteArticle(id) {
   }
 }
 
-// 批量删除, 返回删除数
+// 批量删除, 返回删除数 (单次最多 100 条, 防超 PG 参数上限)
+const MAX_BATCH_DELETE = 100
 export async function deleteArticles(ids) {
-  const validIds = ids.map(Number).filter((n) => Number.isInteger(n) && n > 0)
+  const validIds = ids.slice(0, MAX_BATCH_DELETE).map(Number).filter((n) => Number.isInteger(n) && n > 0)
   const result = await prisma.article.deleteMany({
     where: { id: { in: validIds } },
   })

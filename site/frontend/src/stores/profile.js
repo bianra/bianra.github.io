@@ -4,10 +4,12 @@ import { publicApi } from '../api/index.js'
 
 // 把背景图应用到 :root 的 --bg-image CSS 变量
 // 有值 → url('...'); 空值 → 移除自定义, 回退到 tokens.css 默认紫黑渐变
+// URL 经单引号/反斜杠转义, 防 CSS url() 注入 (见 profileService 的协议白名单)
 function applyBgImage(bgUrl) {
   const root = document.documentElement
   if (bgUrl) {
-    root.style.setProperty('--bg-image', `url('${bgUrl}')`)
+    const safe = String(bgUrl).replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    root.style.setProperty('--bg-image', `url('${safe}')`)
   } else {
     root.style.removeProperty('--bg-image')
   }

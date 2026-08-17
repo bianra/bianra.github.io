@@ -5,7 +5,7 @@ import { createApp } from './app.js'
 import { config } from './config.js'
 import { prisma } from './db.js'
 
-const app = createApp()
+const app = await createApp()
 
 const server = app.listen(config.port, () => {
   console.log(`🚀 bianra 后端已启动: http://localhost:${config.port} (${config.nodeEnv})`)

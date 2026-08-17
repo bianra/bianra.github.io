@@ -123,7 +123,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearInterval(draftTimer)
-  clearTimeout(enhanceTimer)
   window.removeEventListener('beforeunload', saveDraft)
 })
 </script>

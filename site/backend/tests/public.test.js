@@ -1,11 +1,14 @@
 // 公开 API 集成测试 (supertest + vitest)
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
 import request from 'supertest'
 
 import { createApp } from '../src/app.js'
 import { resetDb, createArticle } from './setup.js'
 
-const app = createApp()
+let app
+beforeAll(async () => {
+  app = await createApp()
+})
 
 describe('公开 API', () => {
   beforeEach(async () => {

@@ -1,6 +1,7 @@
 <script setup>
 // 知识 Agent: 左侧对话问答 + 右侧草稿审核台
 import { ref, onMounted } from 'vue'
+import { adminApi } from '../../api/index.js'
 
 const messages = ref([])          // [{role:'user'|'agent', text}]
 const question = ref('')
@@ -29,10 +30,7 @@ async function uploadAndGenerate() {
   if (!text || uploading.value) return
   uploading.value = true
   try {
-    const d = await api('/admin/api/agent/summarize', {
-      method: 'POST',
-      body: JSON.stringify({ text, topic: uploadTopic.value.trim() }),
-    })
+    const d = await adminApi.agentSummarize({ text, topic: uploadTopic.value.trim() })
     messages.value.push({ role: 'user', text: '📤 上传了一段记录(共 ' + text.length + ' 字)' })
     messages.value.push({ role: 'agent', text: `✅ 已生成笔记草稿《${d.title || '未命名'}》(${d.draft_id})\n请在右侧审核台查看并审核。` })
     uploadText.value = ''
@@ -44,16 +42,6 @@ async function uploadAndGenerate() {
   } finally {
     uploading.value = false
   }
-}
-
-async function api(path, opts = {}) {
-  const r = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts,
-  })
-  const data = await r.json().catch(() => ({}))
-  if (!r.ok && !data.ok) throw new Error(data.reason || data.error || `请求失败(${r.status})`)
-  return data
 }
 
 function showToast(msg) {
@@ -69,7 +57,7 @@ async function send() {
   question.value = ''
   asking.value = true
   try {
-    const d = await api(`/admin/api/agent/ask?query=${encodeURIComponent(q)}`)
+    const d = await adminApi.agentAsk(q)
     const src = (d.sources || []).length ? `\n\n📚 参考: ${d.sources.join(', ')}` : ''
     messages.value.push({ role: 'agent', text: (d.answer || '无回答') + src })
   } catch (e) {
@@ -83,7 +71,7 @@ async function send() {
 async function loadDrafts() {
   loadingDrafts.value = true
   try {
-    const d = await api('/admin/api/agent/drafts')
+    const d = await adminApi.agentDrafts()
     drafts.value = d.drafts || []
   } catch (e) {
     showToast('加载草稿失败: ' + e.message)
@@ -94,7 +82,7 @@ async function loadDrafts() {
 
 async function openDraft(d) {
   try {
-    selected.value = await api(`/admin/api/agent/draft/${d.id}`)
+    selected.value = await adminApi.agentDraft(d.id)
   } catch (e) {
     showToast('读取草稿失败: ' + e.message)
   }
@@ -104,7 +92,8 @@ async function act(action) {
   if (!selected.value || acting.value) return
   acting.value = true
   try {
-    const body = { draft_id: selected.value.id }
+    const id = selected.value.id
+    const body = {}
     if (action === 'feedback') body.opinion = opinion.value.trim()
     if (action === 'feedback' && !body.opinion) throw new Error('请先填写修改意见')
     // 审核动作同步进对话,过程可见
@@ -114,10 +103,12 @@ async function act(action) {
     } else {
       messages.value.push({ role: 'user', text: `🎛 对《${title}》执行: ${actionLabel(action)}` })
     }
-    const d = await api(`/admin/api/agent/${action}`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
+    const d = await {
+      feedback: () => adminApi.agentFeedback(id, body.opinion),
+      approve: () => adminApi.agentApprove(id),
+      reject: () => adminApi.agentReject(id),
+      publish: () => adminApi.agentPublish(id),
+    }[action]()
     // Agent 在对话中的回应
     if (action === 'feedback') {
       messages.value.push({ role: 'agent', text: `✅ 已按你的意见修改《${title}》(状态: ${d.status || 'revised'})\n\n📝 修改说明:\n${d.revision_note || '草稿已更新'}\n\n(正文见右侧草稿预览,可继续提意见或点「通过」)` })
@@ -152,7 +143,7 @@ function actionLabel(a) {
 async function loadNotes() {
   loadingNotes.value = true
   try {
-    const d = await api('/admin/api/agent/notes')
+    const d = await adminApi.agentNotes()
     notes.value = d.notes || []
   } catch (e) {
     showToast('加载笔记失败: ' + e.message)
@@ -173,7 +164,7 @@ async function build(kind) {
   if (kind === 'tree' && ids.length < 1) { showToast('请至少勾选 1 篇笔记'); return }
   building.value = true
   try {
-    const d = await api(`/admin/api/agent/${kind}`, { method: 'POST', body: JSON.stringify({ note_ids: ids }) })
+    const d = kind === 'merge' ? await adminApi.agentMerge(ids) : await adminApi.agentTree(ids)
     const label = kind === 'merge' ? '🤝 合并笔记' : '🌳 生成知识树'
     messages.value.push({ role: 'user', text: `${label}: 选了 ${ids.length} 篇笔记` })
     messages.value.push({ role: 'agent', text: `✅ ${kind === 'merge' ? '合并稿' : '知识树草稿'}已生成(${d.draft_id})

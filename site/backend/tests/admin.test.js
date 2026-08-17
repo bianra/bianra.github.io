@@ -1,11 +1,14 @@
 // 后台 API 集成测试 (supertest + vitest)
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
 import request from 'supertest'
 
 import { createApp } from '../src/app.js'
 import { resetDb, createArticle, createAdmin } from './setup.js'
 
-const app = createApp()
+let app
+beforeAll(async () => {
+  app = await createApp()
+})
 const TEST_USER = 'admin'
 const TEST_PASS = 'test123456'
 

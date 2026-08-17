@@ -182,6 +182,9 @@ npm run dev                 # http://localhost:5173(Vite 代理 /api → :3000)
 ```bash
 cd site/backend && npm test   # vitest(文章/认证/文件服务等)
 ```
+> 测试需要 `.env` 中的 `DATABASE_URL`(Neon 或本机 PostgreSQL);测试自动追加 `?schema=test`
+> 隔离到独立 schema,**不会清除开发数据**。生产会话已持久化到同一数据库的 `session` 表
+> (connect-pg-simple, 重启/部署不丢登录态)。
 
 ---
 

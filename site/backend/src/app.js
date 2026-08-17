@@ -6,6 +6,8 @@ import helmet from 'helmet'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
+import connectPgSimple from 'connect-pg-simple'
+import pg from 'pg'
 import morgan from 'morgan'
 import path from 'node:path'
 import { existsSync } from 'node:fs'
@@ -17,29 +19,80 @@ import { publicRouter } from './routes/public.js'
 import { adminRouter } from './routes/admin.js'
 import { getUpload } from './services/fileService.js'
 
+const { Pool } = pg
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export function createApp() {
+// ===== 会话存储: PostgreSQL (connect-pg-simple), 重启/部署不丢登录态 =====
+// - 测试环境: MemoryStore(集成测试无需持久会话, 避免依赖/污染数据库)
+// - 生产/开发: PG store, 显式 CREATE TABLE IF NOT EXISTS 确保 session 表存在
+//   (Neon 连接池下 createTableIfMissing 的自动 DDL 不可靠, 故手动建表)
+// - 开发时数据库不可达则回退 MemoryStore(仅警告); 生产拒绝降级
+const PgSession = connectPgSimple(session)
+const sessionPool = new Pool({ connectionString: config.databaseUrl, max: 5 })
+
+const SESSION_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "session" (
+    "sid" varchar NOT NULL COLLATE "default",
+    "sess" json NOT NULL,
+    "expire" timestamp(6) NOT NULL,
+    CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+  );
+  CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+`
+
+async function createSessionStore() {
+  if (config.nodeEnv === 'test') {
+    return new session.MemoryStore()
+  }
+  try {
+    // 显式建表 (幂等), 再探测写读一次确认可用
+    await sessionPool.query(SESSION_TABLE_SQL)
+    const store = new PgSession({ pool: sessionPool, createTableIfMissing: false })
+    const probeId = `probe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    await new Promise((resolve, reject) => {
+      store.set(probeId, { ok: true }, (err) => (err ? reject(err) : resolve()))
+    })
+    await new Promise((resolve) => store.destroy(probeId, () => resolve()))
+    return store
+  } catch (e) {
+    if (config.isProd) {
+      console.error('❌ 生产环境无法初始化 PG 会话存储(拒绝降级为 MemoryStore):', e.message)
+      throw e
+    }
+    console.warn('⚠️  PG 会话存储初始化失败, 开发环境回退 MemoryStore(重启即失效):', e.message)
+    return new session.MemoryStore()
+  }
+}
+
+export async function createApp() {
   const app = express()
 
   // 信任代理 (生产环境反代后才能拿到真实协议/域名)
   app.set('trust proxy', 1)
 
-  // 安全头: 允许跨域加载上传的图片资源
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+  // 安全头: 允许跨域加载上传的图片资源; 放开 img-src 允许外链图床图片
+  // (先剔除默认 img-src 再覆盖, 避免 duplicate directive)
+  const cspDirectives = helmet.contentSecurityPolicy.getDefaultDirectives()
+  delete cspDirectives['img-src']
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        ...cspDirectives,
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+  }))
 
   // 跨域 (带凭证 cookie)
   app.use(cors({ origin: config.corsOrigin, credentials: true }))
 
-  // cookie & 会话
-  // 开发: MemoryStore (单管理员本地够用)
-  // 生产: 切换 connect-pg-simple 持久化 (部署阶段配置)
-  if (config.isProd) {
-    console.warn('⚠️  生产环境使用 MemoryStore, session 重启即丢失; 部署前请切换 connect-pg-simple 持久化')
-  }
+  // cookie & 会话 (PostgreSQL 持久化, 重启不丢)
+  const sessionStore = await createSessionStore()
   app.use(cookieParser())
   app.use(session({
     name: 'bianra.sid',
+    store: sessionStore,
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
