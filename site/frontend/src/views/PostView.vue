@@ -1,9 +1,10 @@
 <script setup>
 // 文章详情页: markdown-it 渲染 + 小框/代码高亮 + 阅读时长
+// 阅读增强: 右侧目录 TOC + 标题锚点 + 字号调节 + 图片灯箱 + 上一篇/下一篇 + 返回顶部
 import { onMounted, onBeforeUnmount, computed, ref, watch, nextTick } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { publicApi } from '../api/index.js'
-import { enhanceRendered, renderMd } from '../utils/markdown.js'
+import { enhanceRendered, renderMd, injectHeadingIds } from '../utils/markdown.js'
 
 const route = useRoute()
 const article = ref(null)
@@ -38,28 +39,121 @@ const createdAtStr = computed(() => {
   return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 })
 
+/* ===== 阅读增强状态 ===== */
+const toc = ref([])              // [{id, text, level}]
+const activeToc = ref('')        // 当前高亮目录项
+const fontSize = ref(16)         // 正文字号
+const FONT_STEPS = [15, 16, 17]
+const lightbox = ref(null)       // {src, alt} | null
+const showTop = ref(false)       // 返回顶部按钮
+const prevNext = ref({ prev: null, next: null })
+
+// localStorage 读写降级
+function readFontSize() {
+  try { return parseInt(localStorage.getItem('bianra_post_font') || '16', 10) || 16 } catch { return 16 }
+}
+function adjustFont(delta) {
+  const i = FONT_STEPS.indexOf(fontSize.value)
+  const ni = Math.max(0, Math.min(FONT_STEPS.length - 1, i + delta))
+  if (ni === i) return
+  fontSize.value = FONT_STEPS[ni]
+  try { localStorage.setItem('bianra_post_font', String(fontSize.value)) } catch { /* ignore */ }
+}
+const fontMin = computed(() => fontSize.value <= FONT_STEPS[0])
+const fontMax = computed(() => fontSize.value >= FONT_STEPS[FONT_STEPS.length - 1])
+
+let tocObserver = null
+let bodyEl = null // 当前正文容器 (事件委托用)
+
+function setupTocObserver() {
+  tocObserver?.disconnect()
+  tocObserver = null
+  if (!toc.value.length) return
+  const els = [...document.querySelectorAll('.post-body .post-heading')]
+  if (!els.length) return
+  // 进入视口上沿 ~80px 区间的标题视为"当前章节"
+  tocObserver = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (en.isIntersecting) activeToc.value = en.target.id
+    })
+  }, { rootMargin: '-80px 0px -70% 0px' })
+  els.forEach((el) => tocObserver.observe(el))
+}
+
+function scrollToHeading(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+// 给标题加锚点 # (点击复制链接)
+function attachAnchors() {
+  document.querySelectorAll('.post-body .post-heading').forEach((h) => {
+    if (h.querySelector('.post-anchor')) return
+    const a = document.createElement('a')
+    a.className = 'post-anchor'
+    a.textContent = '#'
+    a.href = '#' + h.id
+    a.setAttribute('aria-label', '复制章节链接')
+    a.addEventListener('click', (e) => {
+      e.preventDefault()
+      const url = location.origin + location.pathname + '#' + h.id
+      history.replaceState(null, '', '#' + h.id)
+      navigator.clipboard?.writeText(url).catch(() => {})
+      a.textContent = '✓'
+      setTimeout(() => { a.textContent = '#' }, 1200)
+    })
+    h.appendChild(a)
+  })
+}
+
+// 正文图片点击 → 灯箱 (事件委托, 随节点销毁自动解绑)
+function onBodyClick(e) {
+  const img = e.target.closest('img')
+  if (img) {
+    e.preventDefault()
+    lightbox.value = { src: img.currentSrc || img.src, alt: img.alt || '' }
+  }
+}
+
+function closeLightbox() { lightbox.value = null }
+function onKeydown(e) { if (e.key === 'Escape') closeLightbox() }
+function onScroll() { showTop.value = (window.scrollY || 0) > window.innerHeight }
+function scrollTop() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
 async function loadArticle(id) {
   loading.value = true
   err.value = null
   article.value = null
   html.value = ''
+  toc.value = []
+  activeToc.value = ''
+  lightbox.value = null
+  prevNext.value = { prev: null, next: null }
   try {
     const data = await publicApi.getArticle(id)
     article.value = data
     // markdown-it 渲染 + DOMPurify 消毒 (支持富文本图片尺寸, 防 XSS)
     html.value = renderMd(typeof data.content === 'string' ? data.content : '')
+    // 并行加载上一篇/下一篇
+    publicApi.getPrevNext(id).then((d) => { prevNext.value = d || { prev: null, next: null } }).catch(() => {})
   } catch (e) {
     err.value = e || new Error('文章不存在')
   } finally {
     loading.value = false
     await nextTick()
-    // 给所有内容图加 draggable=false (内容保护)
-    document.querySelectorAll('.post-body img').forEach(img => {
-      img.setAttribute('draggable', 'false')
-      if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy')
-    })
-    // 代码块复制按钮 + 折叠框
-    enhanceRendered(document.querySelector('.post-body'))
+    bodyEl = document.querySelector('.post-body')
+    if (bodyEl) {
+      // 内容图: 防拖拽 + 懒加载 + 灯箱点击
+      bodyEl.querySelectorAll('img').forEach(img => {
+        img.setAttribute('draggable', 'false')
+        if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy')
+      })
+      // 代码块复制按钮 + 折叠框 + 标题 id 注入
+      enhanceRendered(bodyEl)
+      toc.value = injectHeadingIds(bodyEl)
+      attachAnchors()
+      bodyEl.addEventListener('click', onBodyClick)
+      setupTocObserver()
+    }
   }
 }
 
@@ -77,11 +171,18 @@ function onCopy(e) {
 }
 
 onMounted(() => {
+  fontSize.value = readFontSize()
   loadArticle(routeId.value)
   document.addEventListener('copy', onCopy)
+  document.addEventListener('keydown', onKeydown)
+  window.addEventListener('scroll', onScroll, { passive: true })
 })
 onBeforeUnmount(() => {
   document.removeEventListener('copy', onCopy)
+  document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('scroll', onScroll)
+  tocObserver?.disconnect()
+  bodyEl?.removeEventListener('click', onBodyClick)
 })
 
 // 路由 id 变化时(比如从详情 A 跳到详情 B)重新加载
@@ -90,6 +191,18 @@ watch(routeId, (id) => id && loadArticle(id))
 
 <template>
   <div class="post-root">
+    <!-- 右侧目录 (桌面 ≥1024px, 标题 ≥2 个才显示) -->
+    <aside v-if="toc.length >= 2" class="post-toc" aria-label="文章目录">
+      <div class="toc-title">📑 目录</div>
+      <a
+        v-for="t in toc"
+        :key="t.id"
+        :href="'#' + t.id"
+        :class="['toc-item', { active: activeToc === t.id, sub: t.level === 3 }]"
+        @click.prevent="scrollToHeading(t.id)"
+      >{{ t.text }}</a>
+    </aside>
+
     <div class="post-container">
       <div v-if="loading" class="post-loading">
         <div class="spinner"></div>
@@ -119,17 +232,47 @@ watch(routeId, (id) => id && loadArticle(id))
               <span class="meta-sep">|</span>
               <span v-for="t in article.tags" :key="t" class="meta-tag">#{{ t }}</span>
             </template>
+            <!-- 字号调节 -->
+            <span class="meta-sep">|</span>
+            <span class="font-ctl" role="group" aria-label="字号调节">
+              <button class="font-btn" :disabled="fontMin" title="减小字号" @click="adjustFont(-1)">A−</button>
+              <button class="font-btn" :disabled="fontMax" title="增大字号" @click="adjustFont(1)">A+</button>
+            </span>
           </div>
         </header>
 
-        <!-- Markdown 正文 (无卡片包裹, 全宽居中) -->
-        <div class="post-body" v-html="html"></div>
+        <!-- Markdown 正文 (字号由 CSS 变量控制) -->
+        <div class="post-body" :style="{ '--post-font-size': fontSize + 'px' }" v-html="html"></div>
+
+        <!-- 上一篇 / 下一篇 -->
+        <nav v-if="prevNext.prev || prevNext.next" class="post-pn" aria-label="相邻文章">
+          <RouterLink v-if="prevNext.prev" :to="`/post/${prevNext.prev.id}`" class="pn-item pn-prev">
+            <span class="pn-label">← 上一篇</span>
+            <span class="pn-title">{{ prevNext.prev.title }}</span>
+          </RouterLink>
+          <span v-else class="pn-item pn-empty"></span>
+          <RouterLink v-if="prevNext.next" :to="`/post/${prevNext.next.id}`" class="pn-item pn-next">
+            <span class="pn-label">下一篇 →</span>
+            <span class="pn-title">{{ prevNext.next.title }}</span>
+          </RouterLink>
+        </nav>
 
         <div class="post-footer">
           <RouterLink to="/" class="back-btn">← 返回首页</RouterLink>
         </div>
       </article>
     </div>
+
+    <!-- 返回顶部 -->
+    <button v-if="showTop" class="back-top" aria-label="返回顶部" @click="scrollTop">↑</button>
+
+    <!-- 图片灯箱 -->
+    <Teleport to="body">
+      <div v-if="lightbox" class="lightbox" role="dialog" aria-label="图片预览" @click.self="closeLightbox">
+        <img :src="lightbox.src" :alt="lightbox.alt" @click.stop />
+        <button class="lightbox-close" aria-label="关闭" @click="closeLightbox">✕</button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -220,9 +363,123 @@ watch(routeId, (id) => id && loadArticle(id))
   color: rgba(var(--accent-rgb), 0.85);
 }
 
+/* 字号调节 */
+.font-ctl { display: inline-flex; gap: 4px; }
+.font-btn {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: rgba(238, 230, 255, 0.8);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.font-btn:hover:not(:disabled) { background: rgba(255,255,255,0.14); color: #fff; }
+.font-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* 右侧目录 */
+.post-toc {
+  position: fixed;
+  right: max(24px, calc((100vw - 1180px) / 2 - 200px));
+  top: 110px;
+  width: 180px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(12, 10, 22, 0.72);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  z-index: 90;
+  font-size: 12px;
+  scrollbar-width: thin;
+}
+.toc-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(238, 230, 255, 0.9);
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+.toc-item {
+  display: block;
+  padding: 3px 8px;
+  margin: 2px 0;
+  border-radius: 6px;
+  color: rgba(238, 230, 255, 0.55);
+  text-decoration: none;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.toc-item.sub { padding-left: 18px; font-size: 11px; }
+.toc-item:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.toc-item.active {
+  color: #fff;
+  background: rgba(var(--accent-rgb), 0.18);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* 上一篇 / 下一篇 */
+.post-pn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.pn-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.18s;
+  min-width: 0;
+}
+.pn-item:hover { background: rgba(var(--accent-rgb), 0.12); transform: translateY(-1px); }
+.pn-empty { visibility: hidden; }
+.pn-label { font-size: 11px; color: rgba(238, 230, 255, 0.5); }
+.pn-title {
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pn-next { text-align: right; }
+
+/* 返回顶部 */
+.back-top {
+  position: fixed;
+  right: 28px;
+  bottom: 32px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(12, 10, 22, 0.8);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 90;
+  backdrop-filter: blur(8px);
+  transition: all 0.18s;
+}
+.back-top:hover { background: rgba(var(--accent-rgb), 0.35); transform: translateY(-2px); }
+
 /* Markdown 正文 (无卡片包裹, 参考 Argon 全宽阅读) */
 .post-body {
-  font-size: 16px;
+  font-size: var(--post-font-size, 16px);
   line-height: 1.85;
   color: rgba(240, 234, 255, 0.92);
 }
@@ -233,6 +490,7 @@ watch(routeId, (id) => id && loadArticle(id))
   font-weight: 700;
   margin: 32px 0 14px;
   line-height: 1.35;
+  scroll-margin-top: 90px; /* 锚点跳转不被顶部导航遮挡 */
 }
 .post-body :deep(h1) { font-size: 28px; }
 .post-body :deep(h2) { font-size: 24px; margin-top: 40px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -286,6 +544,7 @@ watch(routeId, (id) => id && loadArticle(id))
   box-shadow: 0 8px 28px rgba(0,0,0,0.45);
   user-select: none;
   -webkit-user-drag: none;
+  cursor: zoom-in; /* 提示可点击放大 */
 }
 .post-body :deep(hr) {
   margin: 32px 0;
@@ -315,12 +574,54 @@ watch(routeId, (id) => id && loadArticle(id))
   margin-top: 8px;
 }
 
+/* 图片灯箱 */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(5, 3, 14, 0.88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  animation: lb-in 0.2s ease-out both;
+}
+.lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.2); }
+@keyframes lb-in { from { opacity: 0; } to { opacity: 1; } }
+
 /* 响应式 */
+@media (max-width: 1024px) {
+  .post-toc { display: none; } /* 窄屏隐藏侧栏目录 */
+}
 @media (max-width: 720px) {
   .post-root { padding: 72px 0 64px; }
   .post-container { padding: 0 14px; }
   .post-body { padding: 24px 20px; font-size: 15px; }
   .post-body :deep(h1) { font-size: 24px; }
   .post-body :deep(h2) { font-size: 20px; }
+  .post-pn { grid-template-columns: 1fr; }
+  .pn-next { text-align: left; }
+  .back-top { right: 16px; bottom: 20px; }
 }
 </style>

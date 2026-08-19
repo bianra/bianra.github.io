@@ -81,6 +81,7 @@ export const publicApi = {
     return request(`/api/articles${q ? '?' + q : ''}`)
   },
   getArticle: (id) => request(`/api/articles/${id}`),
+  getPrevNext: (id) => request(`/api/articles/${id}/prev-next`),
   getFeed: () => request('/api/feed.xml'),
   getCategoryCounts: () => request('/api/category-counts'),
   getTagCloud: () => request('/api/tag-cloud'),

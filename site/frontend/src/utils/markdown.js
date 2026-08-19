@@ -16,16 +16,18 @@ export function createMd() {
     breaks: true,
     highlight(str, lang) {
       // 超大代码块 (≥50KB) 跳过语法高亮, 避免阻塞主线程卡死
+      // data-lang: 供渲染后显示语言角标
+      const langAttr = lang && /^[\w+-]+$/.test(lang) ? ` data-lang="${lang}"` : ''
       if (str.length > 50000) {
-        return `<pre class="hljs code-box"><code>${md.utils.escapeHtml(str)}</code></pre>`
+        return `<pre class="hljs code-box"><code${langAttr}>${md.utils.escapeHtml(str)}</code></pre>`
       }
       if (lang && hljs.getLanguage(lang)) {
         try {
-          return `<pre class="hljs code-box"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
+          return `<pre class="hljs code-box"><code${langAttr}>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`
         } catch (_) { /* fallthrough */ }
       }
       // 无语言/未知语言: 转义后仍加 code-box 样式
-      return `<pre class="hljs code-box"><code>${md.utils.escapeHtml(str)}</code></pre>`
+      return `<pre class="hljs code-box"><code${langAttr}>${md.utils.escapeHtml(str)}</code></pre>`
     },
   })
 
@@ -63,22 +65,64 @@ export function createMd() {
 }
 
 /**
- * 渲染后处理: 给代码块加复制按钮 + 处理折叠框
+ * 标题 id 注入 + 目录收集 (幂等: 已处理过的容器直接返回缓存结果)
+ * @param {HTMLElement} el 正文容器
+ * @returns {Array<{id, text, level}>} 目录结构
+ */
+export function injectHeadingIds(el) {
+  if (!el) return []
+  if (el.dataset.tocReady) {
+    try { return JSON.parse(el.dataset.tocReady) } catch { return [] }
+  }
+  const toc = []
+  const used = new Set()
+  el.querySelectorAll('h2, h3').forEach((h, i) => {
+    const text = h.textContent.trim()
+    // slug: 保留中文/字母数字, 其余转连字符; 冲突追加序号
+    let slug = text.toLowerCase()
+      .replace(/[^\w\u4e00-\u9fff-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      || `sec-${i}`
+    let base = slug
+    let n = 2
+    while (used.has(slug)) slug = `${base}-${n++}`
+    used.add(slug)
+    h.id = slug
+    h.classList.add('post-heading')
+    toc.push({ id: slug, text, level: h.tagName === 'H2' ? 2 : 3 })
+  })
+  el.dataset.tocReady = JSON.stringify(toc)
+  return toc
+}
+
+/**
+ * 渲染后处理: 给代码块加复制按钮+语言角标 + 处理折叠框 + 注入标题 id
  * 在组件 mounted/updated 后调用
  */
 export function enhanceRendered(el) {
   if (!el) return
-  // 代码块复制按钮
+  // 标题 id 注入 + 目录收集
+  injectHeadingIds(el)
+  // 代码块复制按钮 + 语言角标
   el.querySelectorAll('pre.code-box').forEach((pre) => {
     if (pre.querySelector('.code-copy')) return // 已加过
+    const code = pre.querySelector('code')
+    // 语言角标 (读 markdown-it 渲染时写入的 data-lang)
+    const lang = code?.dataset?.lang
+    if (lang && !pre.querySelector('.lang-tag')) {
+      const tag = document.createElement('span')
+      tag.className = 'lang-tag'
+      tag.textContent = lang
+      pre.appendChild(tag)
+    }
     const btn = document.createElement('button')
     btn.className = 'code-copy'
     btn.textContent = '复制'
     btn.setAttribute('aria-label', '复制代码')
     btn.addEventListener('click', async () => {
-      const code = pre.querySelector('code')?.innerText || ''
+      const codeText = pre.querySelector('code')?.innerText || ''
       try {
-        await navigator.clipboard.writeText(code)
+        await navigator.clipboard.writeText(codeText)
         btn.textContent = '✓ 已复制'
       } catch (_) {
         btn.textContent = '复制失败'

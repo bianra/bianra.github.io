@@ -38,3 +38,63 @@ img {
   color: var(--ink-2);
   gap: 12px;
 }
+
+/* ===== 文章阅读增强 (PostView / MdEditor 预览共用) ===== */
+
+/* 标题锚点 # (hover 显示, 点击复制章节链接) */
+.post-heading {
+  position: relative;
+}
+.post-heading .post-anchor {
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  color: rgba(var(--accent-rgb), 0.8);
+  text-decoration: none;
+  font-weight: 400;
+  font-size: 0.8em;
+  transition: opacity 0.15s;
+}
+.post-heading:hover .post-anchor {
+  opacity: 1;
+}
+@media (max-width: 720px) {
+  .post-heading .post-anchor { display: none; } /* 小屏不占位 */
+}
+
+/* 代码块语言角标 (右上, 与复制按钮并存) */
+pre.code-box {
+  position: relative;
+}
+pre.code-box .lang-tag {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 11px;
+  line-height: 1;
+  color: rgba(238, 230, 255, 0.55);
+  font-family: ui-monospace, Consolas, monospace;
+  text-transform: lowercase;
+  pointer-events: none;
+  user-select: none;
+}
+pre.code-box .code-copy {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  padding: 3px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.07);
+  color: rgba(238, 230, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+pre.code-box .code-copy:hover {
+  background: rgba(var(--accent-rgb), 0.22);
+  color: #fff;
+}

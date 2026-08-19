@@ -75,6 +75,41 @@ export async function getArticleById(id) {
   return { ...a, tags: parseTags(a.tags) }
 }
 
+// GET /api/articles/:id/prev-next (上一篇/下一篇, 按 createdAt 相邻, 同时间戳用 id 兜底)
+export async function getPrevNextArticle(id) {
+  const n = Number(id)
+  if (!Number.isInteger(n) || n < 1) return null
+  const cur = await prisma.article.findUnique({
+    where: { id: n },
+    select: { createdAt: true },
+  })
+  if (!cur) return null
+  const select = { id: true, title: true }
+  const [prev, next] = await Promise.all([
+    prisma.article.findFirst({
+      where: {
+        OR: [
+          { createdAt: { lt: cur.createdAt } },
+          { createdAt: cur.createdAt, id: { lt: n } },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select,
+    }),
+    prisma.article.findFirst({
+      where: {
+        OR: [
+          { createdAt: { gt: cur.createdAt } },
+          { createdAt: cur.createdAt, id: { gt: n } },
+        ],
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select,
+    }),
+  ])
+  return { prev, next }
+}
+
 // 标签云: 统计所有文章标签出现次数, 返回 [{name, count}] 按次数降序
 export async function getTagCloud() {
   const articles = await prisma.article.findMany({ select: { tags: true } })

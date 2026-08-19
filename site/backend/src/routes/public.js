@@ -2,7 +2,7 @@
 import { Router } from 'express'
 
 import { getProfile } from '../services/profileService.js'
-import { listArticles, getArticleById, getCategoryCounts, getTagCloud } from '../services/articleService.js'
+import { listArticles, getArticleById, getCategoryCounts, getTagCloud, getPrevNextArticle } from '../services/articleService.js'
 import { buildRssXml } from '../services/rssService.js'
 
 export const publicRouter = Router()
@@ -51,6 +51,17 @@ publicRouter.get('/articles/:id', async (req, res, next) => {
     const article = await getArticleById(req.params.id)
     if (!article) return res.status(404).json({ error: '文章不存在' })
     res.json(article)
+  } catch (e) {
+    next(e)
+  }
+})
+
+// GET /api/articles/:id/prev-next (上一篇/下一篇)
+publicRouter.get('/articles/:id/prev-next', async (req, res, next) => {
+  try {
+    const result = await getPrevNextArticle(req.params.id)
+    if (!result) return res.status(404).json({ error: '文章不存在' })
+    res.json(result)
   } catch (e) {
     next(e)
   }
