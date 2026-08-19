@@ -1,5 +1,5 @@
 <script setup>
-// 文章列表: 搜索 + 分页 + 批量删除 + 单条删除 + 封面缩略图
+// 文章列表: 搜索 + 分页 + 批量删除 + 单条删除
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { adminApi } from '../../api/index.js'
@@ -84,9 +84,9 @@ const pageList = computed(() => {
 
 <template>
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px;flex-wrap:wrap;">
-      <h1 style="font-size:var(--fs-2xl);">文章管理</h1>
-      <div style="display:flex;gap:8px;">
+    <div class="page-head">
+      <h1 class="page-title">文章管理</h1>
+      <div class="head-actions">
         <button
           v-if="selected.size > 0"
           class="btn-danger"
@@ -97,67 +97,201 @@ const pageList = computed(() => {
       </div>
     </div>
 
-    <div class="glass-panel" style="padding:24px;">
+    <div class="glass-panel panel-body">
       <!-- 搜索 -->
-      <div style="display:flex;gap:12px;margin-bottom:16px;">
+      <div class="search-bar">
         <input
           v-model="q"
           @keyup.enter="load(1)"
           placeholder="按标题搜索..."
-          style="flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-solid);color:var(--ink);outline:none;"
+          class="search-input"
         />
         <button class="btn-ghost" @click="load(1)">搜索</button>
       </div>
 
-      <div v-if="loading" style="color:var(--ink-2);padding:40px 0;text-align:center;">加载中...</div>
+      <div v-if="loading" class="table-status">加载中...</div>
 
-      <table v-else-if="data.items.length > 0" style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="color:var(--ink-2);font-size:var(--fs-sm);">
-            <th style="padding:10px 12px;text-align:left;width:40px;">
-              <input type="checkbox" :checked="allChecked" @change="toggleAll" style="accent-color:var(--accent);" />
-            </th>
-            <th style="padding:10px 12px;text-align:left;">标题</th>
-            <th style="padding:10px 12px;text-align:left;">更新时间</th>
-            <th style="padding:10px 12px;text-align:right;">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="a in data.items" :key="a.id" style="border-top:1px solid var(--border);">
-            <td style="padding:10px 12px;">
-              <input type="checkbox" :checked="selected.has(a.id)" @change="toggleOne(a.id)" style="accent-color:var(--accent);" />
-            </td>
-            <td style="padding:10px 12px;font-weight:500;">{{ a.title }}</td>
-            <td style="padding:10px 12px;color:var(--ink-2);font-size:var(--fs-sm);">
-              {{ new Date(a.updatedAt).toLocaleString('zh-CN') }}
-            </td>
-            <td style="padding:10px 12px;text-align:right;white-space:nowrap;">
-              <button class="btn-ghost" style="padding:6px 12px;" @click="router.push({ name: 'admin-article-edit', params: { id: a.id } })">编辑</button>
-              <button class="btn-danger-text" style="padding:6px 12px;margin-left:4px;" :disabled="acting" @click="removeOne(a)">删除</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- 表格: 外层横向滚动容器, 移动端不挤爆 -->
+      <div v-else-if="data.items.length > 0" class="table-scroll">
+        <table class="article-table">
+          <thead>
+            <tr>
+              <th class="col-check">
+                <input type="checkbox" :checked="allChecked" @change="toggleAll" />
+              </th>
+              <th class="col-title">标题</th>
+              <th class="col-time">更新时间</th>
+              <th class="col-ops">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in data.items" :key="a.id" :class="{ 'row-selected': selected.has(a.id) }">
+              <td class="col-check">
+                <input type="checkbox" :checked="selected.has(a.id)" @change="toggleOne(a.id)" />
+              </td>
+              <td class="col-title">
+                <span class="cell-title">{{ a.title }}</span>
+              </td>
+              <td class="col-time">
+                {{ new Date(a.updatedAt).toLocaleString('zh-CN') }}
+              </td>
+              <td class="col-ops">
+                <button class="btn-ghost btn-sm" @click="router.push({ name: 'admin-article-edit', params: { id: a.id } })">编辑</button>
+                <button class="btn-danger-text btn-sm" :disabled="acting" @click="removeOne(a)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <div v-else class="empty-state" style="min-height:20vh;">
+      <div v-else class="empty-state">
         {{ q ? `没有找到与「${q}」相关的文章` : '暂无文章, 点击右上角"新建文章"开始创作' }}
       </div>
 
       <!-- 分页 -->
-      <div v-if="data.pages > 1" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:20px;">
+      <div v-if="data.pages > 1" class="pager">
         <button class="page-btn" :disabled="curPage <= 1" @click="load(curPage - 1)">‹</button>
         <template v-for="(p, i) in pageList" :key="i">
-          <span v-if="p === '...'" style="color:var(--ink-2);padding:0 4px;">…</span>
+          <span v-if="p === '...'" class="pager-ellipsis">…</span>
           <button v-else :class="['page-btn', { active: p === curPage }]" @click="load(p)">{{ p }}</button>
         </template>
         <button class="page-btn" :disabled="curPage >= data.pages" @click="load(curPage + 1)">›</button>
       </div>
-      <div style="margin-top:12px;color:var(--ink-2);font-size:var(--fs-sm);text-align:center;">
+      <div class="pager-info">
         共 {{ data.total }} 篇 · 第 {{ curPage }}/{{ data.pages || 1 }} 页
       </div>
     </div>
   </div>
 </template>
 
-<!-- 按钮/分页类已提升到 tokens.css 全局定义, 此处不再重复 -->
+<style scoped>
+/* ===== 页头 ===== */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.page-title {
+  font-size: var(--fs-2xl);
+  margin: 0;
+}
+.head-actions {
+  display: flex;
+  gap: 8px;
+}
 
+/* ===== 面板 ===== */
+.panel-body {
+  padding: 24px;
+}
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--ink);
+  outline: none;
+}
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+/* ===== 状态/空态 ===== */
+.table-status {
+  color: var(--ink-2);
+  padding: 40px 0;
+  text-align: center;
+}
+.empty-state {
+  min-height: 20vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+
+/* ===== 表格 ===== */
+/* 移动端横向滚动, 桌面正常 */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.article-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px; /* 过窄时触发横向滚动而非挤压 */
+}
+.article-table thead tr {
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
+}
+.article-table th {
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.article-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.col-check {
+  width: 40px;
+  text-align: left !important;
+}
+.col-title {
+  min-width: 200px;
+}
+.col-time {
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
+}
+.col-ops {
+  text-align: right;
+  white-space: nowrap;
+}
+.cell-title {
+  font-weight: 500;
+}
+/* 选中行高亮 */
+.row-selected td {
+  background: rgba(var(--accent-rgb), 0.06);
+}
+input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
+/* ===== 按钮尺寸 ===== */
+.btn-sm {
+  padding: 6px 12px;
+  margin-left: 4px;
+}
+
+/* ===== 分页 ===== */
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+}
+.pager-ellipsis {
+  color: var(--ink-2);
+  padding: 0 4px;
+}
+.pager-info {
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+</style>
